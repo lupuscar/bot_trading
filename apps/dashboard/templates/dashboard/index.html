@@ -1,0 +1,44 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Dashboard | BotTrading{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="dashboard-grid">
+    <!-- Resumen de cuenta -->
+    <div class="card">
+        <h3>💰 Balance Total</h3>
+        <p class="metric">$0.00</p>
+        <span class="metric-label">Sin cuentas configuradas</span>
+    </div>
+
+    <div class="card">
+        <h3>🤖 Bots Activos</h3>
+        <p class="metric">0</p>
+        <span class="metric-label">Ningún bot ejecutándose</span>
+    </div>
+
+    <div class="card">
+        <h3>📈 P&L Hoy</h3>
+        <p class="metric neutral">$0.00</p>
+        <span class="metric-label">Sin operaciones hoy</span>
+    </div>
+
+    <div class="card">
+        <h3>📊 Operaciones Hoy</h3>
+        <p class="metric">0</p>
+        <span class="metric-label">Sin operaciones</span>
+    </div>
+</div>
+
+<div class="card" style="margin-top: 2rem;">
+    <h3>🚀 Primeros Pasos</h3>
+    <ol style="line-height: 2;">
+        <li>Configura una <strong>conexión a exchange</strong> en el panel de Conectores</li>
+        <li>Crea o selecciona una <strong>estrategia de trading</strong></li>
+        <li>Ejecuta un <strong>backtest</strong> para validar tu estrategia</li>
+        <li>Prueba con <strong>Paper Trading</strong> antes de operar en real</li>
+        <li>Cuando estés seguro, activa el <strong>trading en vivo</strong></li>
+    </ol>
+</div>
+{% endblock %}

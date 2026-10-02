@@ -1,0 +1,13 @@
+# ============================================
+# Dependencias de producción
+# ============================================
+-r base.txt
+
+# Servidor WSGI
+gunicorn>=22.0
+
+# Seguridad
+django-secure>=1.0
+
+# Monitorización
+sentry-sdk>=2.0

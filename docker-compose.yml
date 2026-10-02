@@ -1,0 +1,131 @@
+# ============================================
+# Docker Compose - Producción (VPS)
+# ============================================
+# Uso: docker compose up -d
+
+services:
+  # ------------------------------------------
+  # PostgreSQL + TimescaleDB
+  # ------------------------------------------
+  db:
+    image: timescale/timescaledb:latest-pg16
+    container_name: bottradring_db
+    restart: unless-stopped
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: bottradring
+      POSTGRES_USER: bottradring
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-bottradring_prod_2024}
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bottradring"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ------------------------------------------
+  # Redis (Celery broker + cache)
+  # ------------------------------------------
+  redis:
+    image: redis:7-alpine
+    container_name: bottradring_redis
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ------------------------------------------
+  # Django (aplicación web)
+  # ------------------------------------------
+  web:
+    build: .
+    container_name: bottradring_web
+    restart: unless-stopped
+    command: >
+      sh -c "python manage.py migrate --settings=config.settings.prod &&
+             gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 3"
+    volumes:
+      - static_files:/app/staticfiles
+      - ./logs:/app/logs
+      - ./data:/app/data
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      DJANGO_SETTINGS_MODULE: config.settings.prod
+
+  # ------------------------------------------
+  # Celery Worker (ejecuta tareas asíncronas)
+  # ------------------------------------------
+  celery_worker:
+    build: .
+    container_name: bottradring_celery_worker
+    restart: unless-stopped
+    command: celery -A config.celery worker --loglevel=info --concurrency=2
+    volumes:
+      - ./logs:/app/logs
+      - ./data:/app/data
+    env_file:
+      - .env
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      DJANGO_SETTINGS_MODULE: config.settings.prod
+
+  # ------------------------------------------
+  # Celery Beat (scheduler periódico)
+  # ------------------------------------------
+  celery_beat:
+    build: .
+    container_name: bottradring_celery_beat
+    restart: unless-stopped
+    command: celery -A config.celery beat --loglevel=info
+    volumes:
+      - ./logs:/app/logs
+    env_file:
+      - .env
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      DJANGO_SETTINGS_MODULE: config.settings.prod
+
+  # ------------------------------------------
+  # Nginx (reverse proxy, en producción)
+  # ------------------------------------------
+  nginx:
+    image: nginx:alpine
+    container_name: bottradring_nginx
+    restart: unless-stopped
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf
+      - static_files:/app/staticfiles
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - web
+
+volumes:
+  postgres_data:
+  redis_data:
+  static_files:

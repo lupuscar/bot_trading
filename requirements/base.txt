@@ -1,0 +1,27 @@
+# ============================================
+# Dependencias base del proyecto
+# ============================================
+
+# Django
+Django>=5.1,<6.0
+djangorestframework>=3.15
+django-cors-headers>=4.4
+django-environ>=0.11
+django-extensions>=3.2
+
+# Base de datos
+psycopg2-binary>=2.9
+
+# Celery + Redis
+celery>=5.4
+redis>=5.0
+
+# Trading
+ccxt>=4.0
+
+# Data Analysis
+pandas>=2.2
+numpy>=2.0
+
+# Utilidades
+python-dotenv>=1.0

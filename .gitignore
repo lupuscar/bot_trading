@@ -51,7 +51,7 @@ data/*.parquet
 !data/.gitkeep
 
 # Logs
-logs/*.log
+logs/*
 !logs/.gitkeep
 
 # Celery

@@ -7,11 +7,11 @@ services:
       - proxy-network
     labels:
       - "traefik.enable=true"
-      # Sustituye 'bot.z2informatica.com' por el subdominio que vayas a usar
       - "traefik.http.routers.bottrading.rule=Host(`bot.z2informatica.com`)"
       - "traefik.http.routers.bottrading.entrypoints=websecure"
       - "traefik.http.routers.bottrading.tls.certresolver=myresolver"
       - "traefik.http.services.bottrading.loadbalancer.server.port=80"
+      - "traefik.docker.network=proxy-network"
 
 networks:
   proxy-network:

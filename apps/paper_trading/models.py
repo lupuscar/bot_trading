@@ -21,6 +21,14 @@ class PaperAccount(ActivatableModel):
         related_name='paper_accounts',
         verbose_name='Usuario',
     )
+    bot = models.OneToOneField(
+        'live_trading.TradingBot',
+        on_delete=models.CASCADE,
+        related_name='paper_account',
+        verbose_name='Bot Asociado',
+        null=True,
+        blank=True
+    )
     name = models.CharField('Nombre', max_length=100)
     initial_balance = models.DecimalField(
         'Balance inicial',

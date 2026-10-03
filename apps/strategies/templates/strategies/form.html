@@ -1,0 +1,69 @@
+{% extends 'dashboard/base.html' %}
+
+{% block title %}{{ title }} | BotTrading{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="glass-panel animate-fade-in" style="max-width: 700px;">
+    <form method="post">
+        {% csrf_token %}
+
+        <div class="form-group">
+            <label for="name">Nombre de la estrategia</label>
+            <input type="text" id="name" name="name" class="form-control"
+                   value="{{ strategy.name|default:'' }}"
+                   placeholder="Ej: MA Crossover BTC" required>
+        </div>
+
+        <div class="form-group">
+            <label for="description">Descripción</label>
+            <textarea id="description" name="description" class="form-control"
+                      placeholder="Describe cómo funciona esta estrategia...">{{ strategy.description|default:'' }}</textarea>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label for="strategy_class">Algoritmo</label>
+                <select id="strategy_class" name="strategy_class" class="form-control" required
+                        hx-get="{% url 'strategies:api_params' %}{% if strategy.id %}?strategy_id={{ strategy.id }}{% endif %}" 
+                        hx-target="#dynamic-params" 
+                        hx-trigger="change, load">
+                    <option value="">Seleccionar...</option>
+                    {% for value, label in strategy_classes %}
+                    <option value="{{ value }}" {% if strategy.strategy_class == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="timeframe">Timeframe</label>
+                <select id="timeframe" name="timeframe" class="form-control" required>
+                    {% for value, label in timeframes %}
+                    <option value="{{ value }}" {% if strategy.timeframe == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="version">Versión</label>
+            <input type="text" id="version" name="version" class="form-control font-mono"
+                   value="{{ strategy.version|default:'1.0' }}" placeholder="1.0">
+        </div>
+
+        <div class="form-group" style="margin-top: 1.5rem;">
+            <label style="display: flex; justify-content: space-between; align-items: center;">
+                <span>Parámetros del Algoritmo</span>
+            </label>
+            <div id="dynamic-params">
+                <!-- Aquí se cargan dinámicamente los parámetros por HTMX -->
+            </div>
+        </div>
+
+        <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+            <button type="submit" class="btn btn-primary">💾 Guardar</button>
+            <a href="{% url 'strategies:list' %}" class="btn btn-secondary">Cancelar</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

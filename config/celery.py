@@ -16,6 +16,14 @@ app.config_from_object('django.conf:settings', namespace='CELERY')
 # Autodescubrir tareas en todas las apps instaladas
 app.autodiscover_tasks()
 
+# Celery Beat Schedule
+app.conf.beat_schedule = {
+    'run-trading-bots-every-5-minutes': {
+        'task': 'apps.live_trading.tasks.process_trading_bots',
+        'schedule': 300.0,  # 300 segundos = 5 minutos
+    },
+}
+
 
 @app.task(bind=True, ignore_result=True)
 def debug_task(self):

@@ -1,0 +1,21 @@
+{% extends 'dashboard/base.html' %}
+
+{% block title %}Eliminar Bot | BotTrading{% endblock %}
+{% block page_title %}Eliminar Bot{% endblock %}
+
+{% block content %}
+<div class="glass-panel animate-fade-in">
+    <div class="confirm-box">
+        <span class="empty-state-icon">⚠️</span>
+        <h3>¿Eliminar "{{ bot.name }}"?</h3>
+        <p>Se eliminará el bot <strong>{{ bot.name }}</strong> ({{ bot.symbol }}) y todo su historial de operaciones. Esta acción no se puede deshacer.</p>
+        <form method="post">
+            {% csrf_token %}
+            <div class="btn-group">
+                <button type="submit" class="btn btn-danger">🗑️ Sí, eliminar</button>
+                <a href="{% url 'live_trading:list' %}" class="btn btn-secondary">Cancelar</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

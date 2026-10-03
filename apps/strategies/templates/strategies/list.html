@@ -1,0 +1,73 @@
+{% extends 'dashboard/base.html' %}
+
+{% block title %}Estrategias | BotTrading{% endblock %}
+{% block page_title %}Estrategias de Trading{% endblock %}
+
+{% block content %}
+<div class="page-actions">
+    <h2>{{ strategies.count }} estrategia{{ strategies.count|pluralize:"s" }}</h2>
+    <a href="{% url 'strategies:create' %}" class="btn btn-primary">+ Nueva Estrategia</a>
+</div>
+
+<div class="glass-panel animate-fade-in">
+    {% if strategies %}
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Nombre</th>
+                    <th>Clase</th>
+                    <th>Timeframe</th>
+                    <th>Versión</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for strat in strategies %}
+                <tr>
+                    <td>
+                        <div>
+                            <span style="font-weight: 600;">{{ strat.name }}</span>
+                            {% if strat.description %}
+                            <br><span class="text-muted">{{ strat.description|truncatewords:10 }}</span>
+                            {% endif %}
+                        </div>
+                    </td>
+                    <td>
+                        <span class="font-mono text-muted" style="font-size: 0.8rem;">{{ strat.strategy_class|truncatechars:50 }}</span>
+                    </td>
+                    <td>
+                        <span class="badge" style="background: rgba(139, 92, 246, 0.15); color: var(--accent-secondary); border: 1px solid rgba(139, 92, 246, 0.3);">
+                            {{ strat.get_timeframe_display }}
+                        </span>
+                    </td>
+                    <td class="font-mono">v{{ strat.version }}</td>
+                    <td>
+                        {% if strat.is_active %}
+                        <span class="badge success">Activa</span>
+                        {% else %}
+                        <span class="badge" style="background: rgba(255,255,255,0.1); color: var(--text-muted);">Inactiva</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="actions-cell">
+                            <a href="{% url 'strategies:edit' strat.pk %}" class="btn btn-secondary btn-sm">✏️ Editar</a>
+                            <a href="{% url 'strategies:delete' strat.pk %}" class="btn btn-danger btn-sm">🗑️</a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <span class="empty-state-icon">🧠</span>
+        <h3>Sin estrategias</h3>
+        <p>Crea tu primera estrategia de trading para poder asignarla a un bot.</p>
+        <a href="{% url 'strategies:create' %}" class="btn btn-primary">+ Nueva Estrategia</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

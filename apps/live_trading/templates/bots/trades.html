@@ -1,0 +1,72 @@
+{% extends 'dashboard/base.html' %}
+
+{% block title %}Operaciones: {{ bot.name }} | BotTrading{% endblock %}
+{% block page_title %}📋 Operaciones: {{ bot.name }}{% endblock %}
+
+{% block content %}
+<div class="page-actions">
+    <h2>
+        <span class="font-mono" style="color: var(--info);">{{ bot.symbol }}</span>
+        · {{ bot.get_mode_display }}
+        · {{ trades.count }} operación{{ trades.count|pluralize:"es" }}
+    </h2>
+    <a href="{% url 'live_trading:list' %}" class="btn btn-secondary">← Volver a Bots</a>
+</div>
+
+<div class="glass-panel animate-fade-in">
+    {% if trades %}
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Fecha</th>
+                    <th>Lado</th>
+                    <th>Tipo</th>
+                    <th>Cantidad</th>
+                    <th>Precio</th>
+                    <th>Coste</th>
+                    <th>P&L</th>
+                    <th>Estado</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for trade in trades %}
+                <tr>
+                    <td class="font-mono text-muted">{{ trade.created_at|date:"d/m/Y H:i" }}</td>
+                    <td>
+                        {% if trade.side == 'buy' %}
+                        <span class="badge success">BUY</span>
+                        {% else %}
+                        <span class="badge danger">SELL</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ trade.get_order_type_display }}</td>
+                    <td class="font-mono">{{ trade.amount|floatformat:6 }}</td>
+                    <td class="font-mono">${{ trade.price|floatformat:2 }}</td>
+                    <td class="font-mono">${{ trade.cost|floatformat:2 }}</td>
+                    <td class="font-mono {% if trade.pnl > 0 %}text-success{% elif trade.pnl < 0 %}text-danger{% endif %}">
+                        {% if trade.pnl != None %}
+                        ${{ trade.pnl|floatformat:2 }}
+                        {% else %}
+                        <span class="text-muted">—</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <span class="badge {% if trade.status == 'filled' %}success{% elif trade.status == 'cancelled' %}danger{% else %}warning{% endif %}">
+                            {{ trade.get_status_display }}
+                        </span>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <span class="empty-state-icon">📋</span>
+        <h3>Sin operaciones</h3>
+        <p>Este bot aún no ha ejecutado ninguna operación.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

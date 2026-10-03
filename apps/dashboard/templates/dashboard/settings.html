@@ -1,0 +1,192 @@
+{% extends 'dashboard/base.html' %}
+
+{% block title %}Configuración Unificada | BotTrading{% endblock %}
+{% block page_title %}⚙️ Configuración Unificada{% endblock %}
+
+{% block content %}
+<div class="glass-panel" style="max-width: 900px; margin: 0 auto;" x-data="{ tab: 'ai' }">
+    <!-- Tabs Header -->
+    <div style="display: flex; gap: 1rem; border-bottom: 1px solid var(--border-color); margin-bottom: 2rem; overflow-x: auto;">
+        <button @click="tab = 'ai'" 
+                :class="{ 'btn-primary': tab === 'ai', 'btn': true }" 
+                style="border-radius: 8px 8px 0 0; background: transparent; border: none; padding: 1rem 2rem; color: var(--text-color); font-weight: bold; border-bottom: 3px solid transparent; cursor: pointer; transition: all 0.3s; white-space: nowrap;"
+                :style="tab === 'ai' ? 'border-bottom-color: var(--primary); color: var(--primary);' : ''">
+            🤖 Inteligencia Artificial
+        </button>
+        <button @click="tab = 'exchanges'" 
+                :class="{ 'btn-primary': tab === 'exchanges', 'btn': true }" 
+                style="border-radius: 8px 8px 0 0; background: transparent; border: none; padding: 1rem 2rem; color: var(--text-color); font-weight: bold; border-bottom: 3px solid transparent; cursor: pointer; transition: all 0.3s; white-space: nowrap;"
+                :style="tab === 'exchanges' ? 'border-bottom-color: var(--primary); color: var(--primary);' : ''">
+            🏦 Exchanges & Brokers
+        </button>
+        <button @click="tab = 'system'" 
+                :class="{ 'btn-primary': tab === 'system', 'btn': true }" 
+                style="border-radius: 8px 8px 0 0; background: transparent; border: none; padding: 1rem 2rem; color: var(--text-color); font-weight: bold; border-bottom: 3px solid transparent; cursor: pointer; transition: all 0.3s; white-space: nowrap;"
+                :style="tab === 'system' ? 'border-bottom-color: var(--primary); color: var(--primary);' : ''">
+            ⚙️ Motor del Sistema
+        </button>
+    </div>
+
+    <!-- TAB: Inteligencia Artificial -->
+    <div x-show="tab === 'ai'" x-transition>
+        <div class="panel-header">
+            <h2 class="panel-title">Proveedores de Inteligencia Artificial</h2>
+        </div>
+        <p class="text-muted" style="margin-bottom: 2rem;">Configura las claves de tus proveedores favoritos. El bot usará estas claves cuando selecciones una estrategia de IA.</p>
+        
+        <form method="POST" action="{% url 'dashboard:settings' %}">
+            {% csrf_token %}
+            
+            <div class="grid grid-cols-2 gap-4" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 2rem;">
+                
+                <!-- Google AI Studio -->
+                <div class="glass-panel" style="padding: 1.5rem; background: rgba(255,255,255,0.02); border: 1px solid var(--border-color);">
+                    <h4 style="margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+                        <span style="font-size: 1.2rem;">🌐</span> Google AI Studio (Gemini)
+                    </h4>
+                    <div class="form-group">
+                        <label style="display: block; margin-bottom: 0.5rem; font-size: 0.9rem; color: var(--text-muted);">API Key <span style="font-size: 0.75rem; color: var(--warning);">(Deshabilitado temporalmente)</span></label>
+                        <input type="password" name="GEMINI_API_KEY" class="form-control" style="width: 100%; padding: 0.8rem; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); color: var(--text-muted); border-radius: 6px; cursor: not-allowed;" value="{{ settings.GEMINI_API_KEY|default:'' }}" placeholder="AIzaSy..." disabled>
+                    </div>
+                </div>
+
+                <!-- Groq -->
+                <div class="glass-panel" style="padding: 1.5rem; background: rgba(255,255,255,0.02); border: 1px solid var(--border-color);">
+                    <h4 style="margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+                        <span style="font-size: 1.2rem;">⚡</span> Groq (Llama3, Mixtral)
+                    </h4>
+                    <div class="form-group">
+                        <label style="display: block; margin-bottom: 0.5rem; font-size: 0.9rem; color: var(--text-muted);">API Key <span style="font-size: 0.75rem; color: var(--warning);">(Deshabilitado temporalmente)</span></label>
+                        <input type="password" name="GROQ_API_KEY" class="form-control" style="width: 100%; padding: 0.8rem; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); color: var(--text-muted); border-radius: 6px; cursor: not-allowed;" value="{{ settings.GROQ_API_KEY|default:'' }}" placeholder="gsk_..." disabled>
+                    </div>
+                </div>
+
+                <!-- OpenRouter -->
+                <div class="glass-panel" style="padding: 1.5rem; background: rgba(255,255,255,0.02); border: 1px solid var(--border-color);">
+                    <h4 style="margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+                        <span style="font-size: 1.2rem;">🌌</span> OpenRouter
+                    </h4>
+                    <div class="form-group">
+                        <label style="display: block; margin-bottom: 0.5rem; font-size: 0.9rem; color: var(--text-muted);">API Key</label>
+                        <input type="password" name="OPENROUTER_API_KEY" class="form-control" style="width: 100%; padding: 0.8rem; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); color: white; border-radius: 6px;" value="{{ settings.OPENROUTER_API_KEY|default:'' }}" placeholder="sk-or-v1-...">
+                    </div>
+                </div>
+
+                <!-- OpenAI -->
+                <div class="glass-panel" style="padding: 1.5rem; background: rgba(255,255,255,0.02); border: 1px solid var(--border-color);">
+                    <h4 style="margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+                        <span style="font-size: 1.2rem;">🧠</span> OpenAI (ChatGPT)
+                    </h4>
+                    <div class="form-group">
+                        <label style="display: block; margin-bottom: 0.5rem; font-size: 0.9rem; color: var(--text-muted);">API Key <span style="font-size: 0.75rem; color: var(--warning);">(Deshabilitado temporalmente)</span></label>
+                        <input type="password" name="OPENAI_API_KEY" class="form-control" style="width: 100%; padding: 0.8rem; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); color: var(--text-muted); border-radius: 6px; cursor: not-allowed;" value="{{ settings.OPENAI_API_KEY|default:'' }}" placeholder="sk-..." disabled>
+                    </div>
+                </div>
+
+                <!-- Ollama -->
+                <div class="glass-panel" style="padding: 1.5rem; background: rgba(255,255,255,0.02); border: 1px solid var(--border-color);">
+                    <h4 style="margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+                        <span style="font-size: 1.2rem;">🦙</span> Ollama (Local/Self-hosted)
+                    </h4>
+                    <div class="form-group">
+                        <label style="display: block; margin-bottom: 0.5rem; font-size: 0.9rem; color: var(--text-muted);">Base URL <span style="font-size: 0.75rem; color: var(--warning);">(Deshabilitado temporalmente)</span></label>
+                        <input type="text" name="OLLAMA_BASE_URL" class="form-control" style="width: 100%; padding: 0.8rem; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); color: var(--text-muted); border-radius: 6px; cursor: not-allowed;" value="{{ settings.OLLAMA_BASE_URL|default:'' }}" placeholder="http://localhost:11434" disabled>
+                    </div>
+                </div>            </div>
+            
+            <div style="text-align: right;">
+                <button type="submit" class="btn btn-primary" style="padding: 0.8rem 2rem; font-size: 1rem;">💾 Guardar Proveedores IA</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- TAB: Exchanges & Brokers -->
+    <div x-show="tab === 'exchanges'" x-transition style="display: none;">
+        <div class="panel-header">
+            <h2 class="panel-title">Conexiones a Mercados Globales</h2>
+        </div>
+        <p class="text-muted" style="margin-bottom: 2rem;">Configura las credenciales por defecto para conectarte a los exchanges. Asegúrate de dar permisos de Trading a las API Keys.</p>
+
+        <form method="POST" action="{% url 'dashboard:settings' %}">
+            {% csrf_token %}
+            
+            <div class="glass-panel" style="padding: 1.5rem; background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); margin-bottom: 2rem;">
+                <h4 style="margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.5rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.8rem;">
+                    <img src="https://cryptologos.cc/logos/bnb-bnb-logo.png" style="width: 20px; height: 20px;" alt="Binance"> Binance
+                </h4>
+                <div class="grid grid-cols-2 gap-4" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div class="form-group">
+                        <label style="display: block; margin-bottom: 0.5rem; font-size: 0.9rem; color: var(--text-muted);">API Key</label>
+                        <input type="password" name="BINANCE_API_KEY" class="form-control" style="width: 100%; padding: 0.8rem; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); color: white; border-radius: 6px;" value="{{ settings.BINANCE_API_KEY|default:'' }}">
+                    </div>
+                    <div class="form-group">
+                        <label style="display: block; margin-bottom: 0.5rem; font-size: 0.9rem; color: var(--text-muted);">API Secret</label>
+                        <input type="password" name="BINANCE_API_SECRET" class="form-control" style="width: 100%; padding: 0.8rem; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); color: white; border-radius: 6px;" value="{{ settings.BINANCE_API_SECRET|default:'' }}">
+                    </div>
+                </div>
+            </div>
+
+            <div style="text-align: right;">
+                <button type="submit" class="btn btn-primary" style="padding: 0.8rem 2rem; font-size: 1rem;">💾 Guardar Exchanges</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- TAB: Motor del Sistema -->
+    <div x-show="tab === 'system'" x-transition style="display: none;">
+        <div class="panel-header">
+            <h2 class="panel-title">Estado del Motor de Trading</h2>
+        </div>
+
+        <div class="flex gap-4" style="margin-bottom: 2rem;">
+            <div class="glass-panel" style="flex: 1; text-align: center; background: rgba(255,255,255,0.02); border: 1px solid var(--border-color);">
+                <h4 class="text-muted" style="margin: 0; font-size: 0.9rem; padding-bottom: 1rem;">Estado General (Celery & Redis)</h4>
+                <div style="margin-top: 0.5rem; display: flex; justify-content: center; align-items: center; gap: 0.5rem;">
+                    {% if celery_status.status == 'online' %}
+                        <span class="status-indicator running" style="width: 15px; height: 15px; margin: 0; background: var(--success); border-radius: 50%; display: inline-block; box-shadow: 0 0 10px var(--success);"></span>
+                        <strong class="text-success" style="font-size: 1.2rem; color: var(--success);">ONLINE</strong>
+                    {% elif celery_status.status == 'offline' %}
+                        <span class="status-indicator" style="width: 15px; height: 15px; margin: 0; background: var(--warning); border-radius: 50%; display: inline-block;"></span>
+                        <strong class="text-warning" style="font-size: 1.2rem; color: var(--warning);">DETENIDO</strong>
+                    {% else %}
+                        <span class="status-indicator" style="width: 15px; height: 15px; margin: 0; background: var(--danger); border-radius: 50%; display: inline-block;"></span>
+                        <strong class="text-danger" style="font-size: 1.2rem; color: var(--danger);">DESCONECTADO</strong>
+                    {% endif %}
+                </div>
+                <p class="text-muted" style="margin-top: 0.5rem; font-size: 0.85rem;">{{ celery_status.msg }}</p>
+            </div>
+        </div>
+
+        <div class="panel-header" style="margin-top: 2rem;">
+            <h3 class="panel-title">Acciones de Control</h3>
+        </div>
+        
+        <div class="grid grid-cols-2 gap-4" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            <form method="POST" action="{% url 'dashboard:system_action' %}">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="start">
+                <button type="submit" class="btn btn-primary" style="width: 100%; height: 100px; font-size: 1.2rem; cursor: pointer; transition: all 0.3s;"
+                        {% if celery_status.status == 'online' %}disabled style="opacity: 0.5; cursor: not-allowed;"{% endif %}>
+                    ▶️ Arrancar Motor
+                </button>
+            </form>
+
+            <form method="POST" action="{% url 'dashboard:system_action' %}">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="stop">
+                <button type="submit" class="btn btn-danger" style="width: 100%; height: 100px; font-size: 1.2rem; background-color: var(--danger); color: white; cursor: pointer; border: none; border-radius: 8px; transition: all 0.3s;"
+                        {% if celery_status.status != 'online' %}disabled style="opacity: 0.5; cursor: not-allowed;"{% endif %}>
+                    ⏹️ Detener Motor
+                </button>
+            </form>
+        </div>
+        
+        <div style="margin-top: 3rem; border-top: 1px solid var(--border-color); padding-top: 1rem;">
+            <p class="text-muted" style="font-size: 0.85rem; line-height: 1.6;">
+                <strong>💡 Información:</strong> El motor de trading (Worker + Beat) gestiona los procesos asíncronos. 
+                Si está apagado, los bots de Paper Trading y Live Trading no podrán ejecutar operaciones ni consultar datos en tiempo real.
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}

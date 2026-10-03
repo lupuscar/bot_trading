@@ -1,0 +1,73 @@
+{% extends 'dashboard/base.html' %}
+
+{% block title %}{{ title }} | BotTrading{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="glass-panel animate-fade-in" style="max-width: 700px;">
+    <form method="post">
+        {% csrf_token %}
+
+        <div class="form-group">
+            <label for="name">Nombre de la conexión</label>
+            <input type="text" id="name" name="name" class="form-control"
+                   value="{{ connection.name|default:'' }}"
+                   placeholder="Ej: Mi cuenta Binance" required>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label for="exchange_id">Exchange</label>
+                <select id="exchange_id" name="exchange_id" class="form-control" required>
+                    <option value="">Seleccionar...</option>
+                    {% for value, label in exchanges %}
+                    <option value="{{ value }}" {% if connection.exchange_id == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="market_type">Tipo de mercado</label>
+                <select id="market_type" name="market_type" class="form-control" required>
+                    <option value="">Seleccionar...</option>
+                    {% for value, label in market_types %}
+                    <option value="{{ value }}" {% if connection.market_type == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="api_key">API Key</label>
+            <input type="text" id="api_key" name="api_key" class="form-control font-mono"
+                   placeholder="{% if connection %}(dejar vacío para mantener la actual){% else %}Tu API Key{% endif %}">
+        </div>
+
+        <div class="form-group">
+            <label for="api_secret">API Secret</label>
+            <input type="password" id="api_secret" name="api_secret" class="form-control font-mono"
+                   placeholder="{% if connection %}(dejar vacío para mantener la actual){% else %}Tu API Secret{% endif %}">
+        </div>
+
+        <div class="form-group">
+            <label for="api_passphrase">Passphrase (opcional)</label>
+            <input type="password" id="api_passphrase" name="api_passphrase" class="form-control font-mono"
+                   placeholder="Requerido por algunos exchanges (ej: Coinbase Pro)">
+            <span class="form-hint">Solo necesario si tu exchange lo requiere.</span>
+        </div>
+
+        <div class="form-group">
+            <div class="form-check">
+                <input type="checkbox" id="is_testnet" name="is_testnet"
+                       {% if connection.is_testnet or not connection %}checked{% endif %}>
+                <label for="is_testnet" style="margin-bottom: 0;">Usar Testnet (entorno de pruebas)</label>
+            </div>
+        </div>
+
+        <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+            <button type="submit" class="btn btn-primary">💾 Guardar</button>
+            <a href="{% url 'connectors:list' %}" class="btn btn-secondary">Cancelar</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

@@ -286,3 +286,9 @@ TRADING = {
     'DEFAULT_RISK_PER_TRADE': 0.02,  # 2% del capital
     'DATA_DIR': BASE_DIR / 'data',
 }
+
+# ============================================
+# Inteligencia Artificial - API Keys
+# ============================================
+OPENAI_API_KEY = env('OPENAI_API_KEY', default='')
+GEMINI_API_KEY = env('GEMINI_API_KEY', default='')

@@ -1,0 +1,105 @@
+{% extends 'dashboard/base.html' %}
+
+{% block title %}Bots de Trading | BotTrading{% endblock %}
+{% block page_title %}Bots de Trading{% endblock %}
+
+{% block content %}
+<div class="page-actions">
+    <h2>{{ bots.count }} bot{{ bots.count|pluralize:"s" }}</h2>
+    <a href="{% url 'live_trading:create' %}" class="btn btn-primary">+ Nuevo Bot</a>
+</div>
+
+<div class="glass-panel animate-fade-in">
+    {% if bots %}
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Bot</th>
+                    <th>Mercado</th>
+                    <th>Estrategia</th>
+                    <th>Modo</th>
+                    <th>Estado</th>
+                    <th>Última Señal</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for bot in bots %}
+                <tr id="bot-row-{{ bot.pk }}">
+                    <td>
+                        <div>
+                            <span style="font-weight: 600;">{{ bot.name }}</span>
+                            {% if bot.description %}
+                            <br><span class="text-muted">{{ bot.description|truncatewords:8 }}</span>
+                            {% endif %}
+                        </div>
+                    </td>
+                    <td>
+                        <span class="font-mono" style="color: var(--info); font-weight: 600;">{{ bot.symbol }}</span>
+                        <br><span class="text-muted">{{ bot.get_timeframe_display }}</span>
+                    </td>
+                    <td style="color: var(--accent-secondary);">{{ bot.strategy.name }}</td>
+                    <td>
+                        {% if bot.mode == 'paper' %}
+                        <span class="badge warning">Paper</span>
+                        {% elif bot.mode == 'live' %}
+                        <span class="badge danger">Live</span>
+                        {% else %}
+                        <span class="badge" style="background: rgba(255,255,255,0.1);">Backtest</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if bot.status == 'running' %}
+                        <span class="badge success"><span class="status-indicator running"></span>RUNNING</span>
+                        {% elif bot.status == 'error' %}
+                        <span class="badge danger">ERROR</span>
+                        {% elif bot.status == 'paused' %}
+                        <span class="badge warning">PAUSED</span>
+                        {% else %}
+                        <span class="badge" style="background: rgba(255,255,255,0.1); color: var(--text-muted);">STOPPED</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if bot.last_signal %}
+                            {% if bot.last_signal.type == 'buy' %}
+                            <span class="badge success">BUY</span>
+                            {% elif bot.last_signal.type == 'sell' %}
+                            <span class="badge danger">SELL</span>
+                            {% else %}
+                            <span class="text-muted">HOLD</span>
+                            {% endif %}
+                        {% else %}
+                        <span class="text-muted">—</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="actions-cell">
+                            <form method="post" action="{% url 'live_trading:toggle' bot.pk %}" style="display: inline;">
+                                {% csrf_token %}
+                                {% if bot.status == 'running' %}
+                                <button type="submit" class="btn btn-danger btn-sm">⏹ Stop</button>
+                                {% else %}
+                                <button type="submit" class="btn btn-success btn-sm">▶ Start</button>
+                                {% endif %}
+                            </form>
+                            <a href="{% url 'live_trading:trades' bot.pk %}" class="btn btn-secondary btn-sm">📋</a>
+                            <a href="{% url 'live_trading:edit' bot.pk %}" class="btn btn-secondary btn-sm">✏️</a>
+                            <a href="{% url 'live_trading:delete' bot.pk %}" class="btn btn-danger btn-sm">🗑️</a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <span class="empty-state-icon">🤖</span>
+        <h3>Sin bots configurados</h3>
+        <p>Crea tu primer bot combinando un conector y una estrategia.</p>
+        <a href="{% url 'live_trading:create' %}" class="btn btn-primary">+ Nuevo Bot</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,128 @@
+{% extends 'dashboard/base.html' %}
+
+{% block title %}{{ title }} | BotTrading{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="glass-panel animate-fade-in" style="max-width: 700px;">
+    <form method="post">
+        {% csrf_token %}
+
+        <div class="form-group">
+            <label for="name">Nombre del bot</label>
+            <input type="text" id="name" name="name" class="form-control"
+                   value="{{ bot.name|default:'' }}"
+                   placeholder="Ej: BTC Scalper" required>
+        </div>
+
+        <div class="form-group">
+            <label for="description">Descripción</label>
+            <textarea id="description" name="description" class="form-control"
+                      placeholder="Describe la función de este bot...">{{ bot.description|default:'' }}</textarea>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label for="exchange_connection">Conexión al Exchange</label>
+                <select id="exchange_connection" name="exchange_connection" class="form-control" required>
+                    <option value="">Seleccionar...</option>
+                    {% for conn in connections %}
+                    <option value="{{ conn.pk }}" {% if bot.exchange_connection_id == conn.pk %}selected{% endif %}>
+                        {{ conn.name }} ({{ conn.exchange_id|upper }})
+                    </option>
+                    {% endfor %}
+                </select>
+                {% if not connections %}
+                <span class="form-hint" style="color: var(--warning);">⚠️ No hay conexiones. <a href="{% url 'connectors:create' %}" style="color: var(--accent-primary);">Crear una</a></span>
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                <label for="strategy">Estrategia</label>
+                <select id="strategy" name="strategy" class="form-control" required>
+                    <option value="">Seleccionar...</option>
+                    {% for strat in strategies %}
+                    <option value="{{ strat.pk }}" {% if bot.strategy_id == strat.pk %}selected{% endif %}>
+                        {{ strat.name }} ({{ strat.get_timeframe_display }})
+                    </option>
+                    {% endfor %}
+                </select>
+                {% if not strategies %}
+                <span class="form-hint" style="color: var(--warning);">⚠️ No hay estrategias. <a href="{% url 'strategies:create' %}" style="color: var(--accent-primary);">Crear una</a></span>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label for="symbol">Símbolo de mercado</label>
+                <input type="text" id="symbol" name="symbol" class="form-control font-mono"
+                       value="{{ bot.symbol|default:'' }}"
+                       placeholder="BTC/USDT" required>
+            </div>
+
+            <div class="form-group">
+                <label for="timeframe">Timeframe</label>
+                <select id="timeframe" name="timeframe" class="form-control" required>
+                    {% for value, label in timeframes %}
+                    <option value="{{ value }}" {% if bot.timeframe == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="mode">Modo de operación</label>
+            <select id="mode" name="mode" class="form-control" required>
+                {% for value, label in modes %}
+                <option value="{{ value }}" {% if bot.mode == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+            <span class="form-hint">⚠️ El modo "Live" ejecutará operaciones reales con dinero real.</span>
+        </div>
+
+        <div class="panel-header" style="margin-top: 2rem;">
+            <h2 class="panel-title">⚖️ Gestión de Riesgo</h2>
+        </div>
+
+{% load l10n %}
+        <div class="form-row">
+            <div class="form-group">
+                <label for="max_position_size">Tamaño máximo de posición</label>
+                <input type="number" step="0.00000001" id="max_position_size" name="max_position_size"
+                       class="form-control font-mono"
+                       value="{% if bot %}{{ bot.max_position_size|unlocalize }}{% else %}0.01{% endif %}" required>
+                <span class="form-hint">Cantidad máxima por operación</span>
+            </div>
+
+            <div class="form-group">
+                <label for="risk_per_trade_pct">Riesgo por operación (%)</label>
+                <input type="number" step="0.01" id="risk_per_trade_pct" name="risk_per_trade_pct"
+                       class="form-control font-mono"
+                       value="{% if bot %}{{ bot.risk_per_trade_pct|unlocalize }}{% else %}2.00{% endif %}">
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label for="max_open_positions">Máx. posiciones abiertas</label>
+                <input type="number" id="max_open_positions" name="max_open_positions"
+                       class="form-control font-mono"
+                       value="{% if bot %}{{ bot.max_open_positions }}{% else %}3{% endif %}">
+            </div>
+
+            <div class="form-group">
+                <label for="daily_loss_limit_pct">Límite pérdida diaria (%)</label>
+                <input type="number" step="0.01" id="daily_loss_limit_pct" name="daily_loss_limit_pct"
+                       class="form-control font-mono"
+                       value="{% if bot %}{{ bot.daily_loss_limit_pct|unlocalize }}{% else %}5.00{% endif %}">
+            </div>
+        </div>
+
+        <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+            <button type="submit" class="btn btn-primary">💾 Guardar</button>
+            <a href="{% url 'live_trading:list' %}" class="btn btn-secondary">Cancelar</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

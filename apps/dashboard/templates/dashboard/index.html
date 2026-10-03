@@ -1,44 +1,301 @@
-{% extends "dashboard/base.html" %}
+{% extends 'dashboard/base.html' %}
 
 {% block title %}Dashboard | BotTrading{% endblock %}
-{% block page_title %}Dashboard{% endblock %}
+
+{% block extra_head %}
+<!-- TradingView Lightweight Charts -->
+<script src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
+{% endblock %}
+
+{% block page_title %}
+<div class="flex align-center gap-4">
+    Dashboard en Vivo
+    <span class="badge {% if celery_status.status == 'online' %}success{% elif celery_status.status == 'offline' %}warning{% else %}danger{% endif %}" style="font-size: 0.8rem; display: flex; align-items: center; gap: 0.5rem;">
+        {% if celery_status.status == 'online' %}
+            <span class="status-indicator running" style="margin:0"></span>
+        {% else %}
+            <span class="status-indicator" style="background: {% if celery_status.status == 'offline' %}var(--warning){% else %}var(--danger){% endif %}; margin:0"></span>
+        {% endif %}
+        Motor: {{ celery_status.msg }}
+    </span>
+</div>
+{% endblock %}
 
 {% block content %}
-<div class="dashboard-grid">
-    <!-- Resumen de cuenta -->
-    <div class="card">
-        <h3>💰 Balance Total</h3>
-        <p class="metric">$0.00</p>
-        <span class="metric-label">Sin cuentas configuradas</span>
+<div class="grid grid-cols-3">
+    <!-- Resumen de Bots -->
+    <div class="glass-panel animate-fade-in" style="animation-delay: 0.1s;">
+        <div class="panel-header">
+            <h2 class="panel-title">🤖 Bots Activos</h2>
+        </div>
+
+        <div class="flex col-dir gap-4">
+            {% for bot in bots %}
+            <div class="bot-card">
+                <div class="bot-header">
+                    <span class="bot-name">{{ bot.name }}</span>
+                    {% if bot.status == 'running' %}
+                    <span class="badge success"><span class="status-indicator running"></span>RUNNING</span>
+                    {% else %}
+                    <span class="badge danger">{{ bot.status|upper }}</span>
+                    {% endif %}
+                </div>
+
+                <div style="margin-bottom: 1rem;">
+                    <div class="flex justify-between" style="margin-bottom: 4px;">
+                        <span class="text-muted">Mercado:</span>
+                        <span class="font-mono" style="color: var(--info); font-weight: 600;">{{ bot.symbol }}</span>
+                    </div>
+                    <div class="flex justify-between" style="margin-bottom: 4px;">
+                        <span class="text-muted">Modo:</span>
+                        <span>{{ bot.get_mode_display }}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-muted">Estrategia:</span>
+                        <span style="color: var(--accent-secondary);">{{ bot.strategy.name }}</span>
+                    </div>
+                </div>
+
+                {% if bot.last_signal %}
+                <div style="border-top: 1px solid var(--border-color); padding-top: 0.75rem;">
+                    <p class="text-muted" style="margin-bottom: 4px; font-size: 0.75rem;">Última Señal del Algoritmo</p>
+                    <div class="flex justify-between align-center">
+                        {% if bot.last_signal.type == 'buy' %}
+                        <span class="badge success" style="font-size: 0.8rem;">{{ bot.last_signal.type|upper }}</span>
+                        {% elif bot.last_signal.type == 'sell' %}
+                        <span class="badge danger" style="font-size: 0.8rem;">{{ bot.last_signal.type|upper }}</span>
+                        {% else %}
+                        <span class="badge" style="background: rgba(255,255,255,0.1); font-size: 0.8rem;">HOLD</span>
+                        {% endif %}
+                        <span class="text-muted font-mono" style="font-size: 0.75rem;">{{
+                            bot.last_signal.timestamp|slice:"11:16" }}</span>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+            {% empty %}
+            <div class="text-muted" style="text-align: center; padding: 2rem 0;">
+                No hay bots configurados o activos.
+            </div>
+            {% endfor %}
+        </div>
     </div>
 
-    <div class="card">
-        <h3>🤖 Bots Activos</h3>
-        <p class="metric">0</p>
-        <span class="metric-label">Ningún bot ejecutándose</span>
-    </div>
+    <!-- Paper Trading Portfolios -->
+    <div class="glass-panel col-span-2 animate-fade-in" style="animation-delay: 0.2s;">
+        <div class="panel-header">
+            <h2 class="panel-title">💰 Cuentas Simuladas (Paper Trading)</h2>
+        </div>
 
-    <div class="card">
-        <h3>📈 P&L Hoy</h3>
-        <p class="metric neutral">$0.00</p>
-        <span class="metric-label">Sin operaciones hoy</span>
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Usuario / Cuenta</th>
+                        <th>Capital Disp.</th>
+                        <th>Posiciones Abiertas</th>
+                        <th>Estado P&L</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for account in paper_accounts %}
+                    <tr>
+                        <td>
+                            <div class="flex align-center gap-2">
+                                <div class="avatar">{{ account.user.username|make_list|first|upper }}</div>
+                                <span style="font-weight: 500;">{{ account.user.username }}</span>
+                            </div>
+                        </td>
+                        <td class="font-mono text-success" style="font-weight: 600; font-size: 1.1rem;">
+                            ${{ account.current_balance|floatformat:2 }}
+                        </td>
+                        <td>
+                            <span class="badge warning" style="font-size: 0.8rem;">{{ account.trades.count }} AB</span>
+                        </td>
+                        <td>
+                            <!-- Mock P&L since we didn't calculate overall unrealized PnL in view -->
+                            <span class="text-muted">Calculando...</span>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" style="text-align: center; padding: 2rem 0;" class="text-muted">
+                            No hay cuentas de Paper Trading registradas aún.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
     </div>
+    <!-- TradingView Chart -->
+    <div class="glass-panel col-span-3 animate-fade-in" style="animation-delay: 0.3s; margin-top: 1.5rem;">
+        <div class="panel-header" style="flex-wrap: wrap; gap: 1rem;">
+            <h2 class="panel-title">📈 Gráfico del Mercado</h2>
 
-    <div class="card">
-        <h3>📊 Operaciones Hoy</h3>
-        <p class="metric">0</p>
-        <span class="metric-label">Sin operaciones</span>
+            <div class="flex align-center gap-2" style="flex-wrap: wrap;">
+                <!-- Symbol selector -->
+                <select id="chart-symbol" class="form-control" style="width: auto; padding: 0.4rem 2rem 0.4rem 0.75rem; font-size: 0.8rem;">
+                    <option value="BTC/USDT" {% if chart_symbol == 'BTC/USDT' %}selected{% endif %}>BTC/USDT</option>
+                    <option value="ETH/USDT" {% if chart_symbol == 'ETH/USDT' %}selected{% endif %}>ETH/USDT</option>
+                    <option value="SOL/USDT" {% if chart_symbol == 'SOL/USDT' %}selected{% endif %}>SOL/USDT</option>
+                    <option value="BNB/USDT" {% if chart_symbol == 'BNB/USDT' %}selected{% endif %}>BNB/USDT</option>
+                    <option value="XRP/USDT" {% if chart_symbol == 'XRP/USDT' %}selected{% endif %}>XRP/USDT</option>
+                    <option value="ADA/USDT" {% if chart_symbol == 'ADA/USDT' %}selected{% endif %}>ADA/USDT</option>
+                </select>
+
+                <!-- Timeframe selector -->
+                <div class="flex gap-2" id="tf-buttons">
+                    <button class="btn btn-sm {% if chart_timeframe == '5m' %}btn-primary{% else %}btn-secondary{% endif %}" data-tf="5m">5m</button>
+                    <button class="btn btn-sm {% if chart_timeframe == '15m' %}btn-primary{% else %}btn-secondary{% endif %}" data-tf="15m">15m</button>
+                    <button class="btn btn-sm {% if chart_timeframe == '1h' %}btn-primary{% else %}btn-secondary{% endif %}" data-tf="1h">1H</button>
+                    <button class="btn btn-sm {% if chart_timeframe == '4h' %}btn-primary{% else %}btn-secondary{% endif %}" data-tf="4h">4H</button>
+                    <button class="btn btn-sm {% if chart_timeframe == '1d' %}btn-primary{% else %}btn-secondary{% endif %}" data-tf="1d">1D</button>
+                    <button class="btn btn-sm {% if chart_timeframe == '1w' %}btn-primary{% else %}btn-secondary{% endif %}" data-tf="1w">1W</button>
+                </div>
+
+                <!-- Data source indicator -->
+                <span id="chart-source" class="badge {% if chart_data_source == 'db' %}success{% else %}warning{% endif %}" style="font-size: 0.7rem;">
+                    {% if chart_data_source == 'db' %}
+                    📂 BD ({{ chart_candle_count }} velas)
+                    {% elif chart_candle_count > 0 %}
+                    🌐 Binance API ({{ chart_candle_count }} velas)
+                    {% else %}
+                    ⚠️ Sin datos
+                    {% endif %}
+                </span>
+            </div>
+        </div>
+
+        <div id="tv-chart" style="width: 100%; height: 350px; position: relative;">
+            <div id="chart-loading" style="display: none; position: absolute; inset: 0; align-items: center; justify-content: center; background: rgba(0,0,0,0.3); z-index: 10; border-radius: var(--border-radius-sm);">
+                <span style="color: var(--text-secondary); font-size: 0.9rem;">⏳ Cargando datos...</span>
+            </div>
+        </div>
     </div>
 </div>
+{% endblock %}
 
-<div class="card" style="margin-top: 2rem;">
-    <h3>🚀 Primeros Pasos</h3>
-    <ol style="line-height: 2;">
-        <li>Configura una <strong>conexión a exchange</strong> en el panel de Conectores</li>
-        <li>Crea o selecciona una <strong>estrategia de trading</strong></li>
-        <li>Ejecuta un <strong>backtest</strong> para validar tu estrategia</li>
-        <li>Prueba con <strong>Paper Trading</strong> antes de operar en real</li>
-        <li>Cuando estés seguro, activa el <strong>trading en vivo</strong></li>
-    </ol>
-</div>
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // === Chart Setup ===
+        const chartContainer = document.getElementById('tv-chart');
+        const chart = LightweightCharts.createChart(chartContainer, {
+            layout: {
+                background: { type: 'solid', color: 'transparent' },
+                textColor: '#94a3b8',
+            },
+            grid: {
+                vertLines: { color: 'rgba(255, 255, 255, 0.05)' },
+                horzLines: { color: 'rgba(255, 255, 255, 0.05)' },
+            },
+            crosshair: {
+                mode: LightweightCharts.CrosshairMode.Normal,
+            },
+            rightPriceScale: {
+                borderColor: 'rgba(255, 255, 255, 0.1)',
+            },
+            timeScale: {
+                borderColor: 'rgba(255, 255, 255, 0.1)',
+                timeVisible: true,
+                secondsVisible: false,
+            },
+        });
+
+        const candlestickSeries = chart.addCandlestickSeries({
+            upColor: '#10b981',
+            downColor: '#ef4444',
+            borderVisible: false,
+            wickUpColor: '#10b981',
+            wickDownColor: '#ef4444'
+        });
+
+        // Responsive
+        const ro = new ResizeObserver(() => {
+            chart.resize(chartContainer.clientWidth, 350);
+        });
+        ro.observe(chartContainer);
+
+        // === State ===
+        let currentSymbol = '{{ chart_symbol }}';
+        let currentTimeframe = '{{ chart_timeframe }}';
+
+        const rawData = '{{ chart_data_json|escapejs }}';
+        if (rawData && rawData !== '[]') {
+            try {
+                const parsedData = JSON.parse(rawData);
+                candlestickSeries.setData(parsedData);
+                chart.timeScale().fitContent();
+            } catch (error) {
+                console.error("Error parseando los datos del gráfico:", error);
+            }
+        } else {
+            // Si la vista de Django nos envía un array vacío (optimización de carga),
+            // lo cargamos asíncronamente para no bloquear la web.
+            loadChartData(currentSymbol, currentTimeframe);
+        }
+
+        // === Dynamic reload via API ===
+        async function loadChartData(symbol, timeframe) {
+            const loading = document.getElementById('chart-loading');
+            const sourceEl = document.getElementById('chart-source');
+            loading.style.display = 'flex';
+
+            try {
+                const resp = await fetch(`/api/chart-data/?symbol=${encodeURIComponent(symbol)}&timeframe=${timeframe}&source=auto`);
+                const result = await resp.json();
+
+                if (result.data && result.data.length > 0) {
+                    candlestickSeries.setData(result.data);
+                    chart.timeScale().fitContent();
+
+                    // Update source badge
+                    if (result.source === 'db') {
+                        sourceEl.className = 'badge success';
+                        sourceEl.style.fontSize = '0.7rem';
+                        sourceEl.textContent = `📂 BD (${result.count} velas)`;
+                    } else {
+                        sourceEl.className = 'badge warning';
+                        sourceEl.style.fontSize = '0.7rem';
+                        sourceEl.textContent = `🌐 Binance API (${result.count} velas)`;
+                    }
+                } else {
+                    candlestickSeries.setData([]);
+                    sourceEl.className = 'badge danger';
+                    sourceEl.style.fontSize = '0.7rem';
+                    sourceEl.textContent = '⚠️ Sin datos';
+                }
+            } catch (e) {
+                console.error('Error cargando datos:', e);
+                const sourceEl = document.getElementById('chart-source');
+                sourceEl.className = 'badge danger';
+                sourceEl.style.fontSize = '0.7rem';
+                sourceEl.textContent = '❌ Error de conexión';
+            } finally {
+                loading.style.display = 'none';
+            }
+        }
+
+        // === Timeframe buttons ===
+        document.querySelectorAll('#tf-buttons button').forEach(btn => {
+            btn.addEventListener('click', function() {
+                // Visual toggle
+                document.querySelectorAll('#tf-buttons button').forEach(b => {
+                    b.className = 'btn btn-sm btn-secondary';
+                });
+                this.className = 'btn btn-sm btn-primary';
+
+                currentTimeframe = this.dataset.tf;
+                loadChartData(currentSymbol, currentTimeframe);
+            });
+        });
+
+        // === Symbol selector ===
+        document.getElementById('chart-symbol').addEventListener('change', function() {
+            currentSymbol = this.value;
+            loadChartData(currentSymbol, currentTimeframe);
+        });
+    });
+</script>
 {% endblock %}

@@ -1,0 +1,72 @@
+{% extends 'dashboard/base.html' %}
+
+{% block title %}Control del Sistema | BotTrading{% endblock %}
+{% block page_title %}⚙️ Control del Sistema{% endblock %}
+
+{% block content %}
+<div class="glass-panel" style="max-width: 800px; margin: 0 auto;">
+    <div class="panel-header">
+        <h2 class="panel-title">Estado del Motor de Trading</h2>
+    </div>
+
+    <div class="flex gap-4" style="margin-bottom: 2rem;">
+        <div class="glass-panel" style="flex: 1; text-align: center; background: rgba(255,255,255,0.02);">
+            <h4 class="text-muted" style="margin: 0; font-size: 0.9rem;">Estado General</h4>
+            <div style="margin-top: 1rem; display: flex; justify-content: center; align-items: center; gap: 0.5rem;">
+                {% if celery_status.status == 'online' %}
+                    <span class="status-indicator running" style="width: 15px; height: 15px; margin: 0;"></span>
+                    <strong class="text-success" style="font-size: 1.2rem;">ONLINE</strong>
+                {% elif celery_status.status == 'offline' %}
+                    <span class="status-indicator" style="width: 15px; height: 15px; margin: 0; background: var(--warning);"></span>
+                    <strong class="text-warning" style="font-size: 1.2rem;">DETENIDO</strong>
+                {% else %}
+                    <span class="status-indicator" style="width: 15px; height: 15px; margin: 0; background: var(--danger);"></span>
+                    <strong class="text-danger" style="font-size: 1.2rem;">DESCONECTADO</strong>
+                {% endif %}
+            </div>
+            <p class="text-muted" style="margin-top: 0.5rem; font-size: 0.85rem;">{{ celery_status.msg }}</p>
+        </div>
+    </div>
+
+    <div class="panel-header" style="margin-top: 2rem;">
+        <h3 class="panel-title">Acciones de Control</h3>
+    </div>
+    
+    <div class="grid grid-cols-2 gap-4">
+        <form method="POST" action="{% url 'dashboard:system_action' %}">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="start">
+            <button type="submit" class="btn btn-primary" style="width: 100%; height: 100px; font-size: 1.2rem;"
+                    {% if celery_status.status == 'online' %}disabled style="opacity: 0.5;"{% endif %}>
+                ▶️ Arrancar Motor
+            </button>
+            <p class="text-muted" style="margin-top: 0.5rem; font-size: 0.8rem; text-align: center;">
+                Inicia los procesos de Celery en segundo plano. (Requiere Redis encendido).
+            </p>
+        </form>
+
+        <form method="POST" action="{% url 'dashboard:system_action' %}">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="stop">
+            <button type="submit" class="btn btn-danger" style="width: 100%; height: 100px; font-size: 1.2rem;"
+                    {% if celery_status.status != 'online' %}disabled style="opacity: 0.5;"{% endif %}>
+                ⏹️ Detener Motor
+            </button>
+            <p class="text-muted" style="margin-top: 0.5rem; font-size: 0.8rem; text-align: center;">
+                Apaga todos los trabajadores y programadores activos.
+            </p>
+        </form>
+    </div>
+
+    <div style="margin-top: 3rem; border-top: 1px solid var(--border-color); padding-top: 1rem;">
+        <h4 style="margin-bottom: 0.5rem;">Información Técnica</h4>
+        <p class="text-muted" style="font-size: 0.85rem; line-height: 1.5;">
+            El motor de trading se compone de dos procesos vitales que deben estar ejecutándose constantemente:
+            <br><br>
+            <strong>1. El Celery Worker:</strong> Encargado de conectarse a los exchanges, descargar datos de mercado, aplicar las estrategias a las velas y ejecutar las órdenes de compra/venta en Paper Trading y Live Trading.
+            <br><br>
+            <strong>2. El Celery Beat:</strong> Actúa como un reloj interno que despierta a los workers cada X minutos y les da la orden de verificar a todos los bots activos (<code>process_trading_bots</code>).
+        </p>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,72 @@
+{% extends 'dashboard/base.html' %}
+
+{% block title %}Paper Trading | BotTrading{% endblock %}
+
+{% block content %}
+<div class="flex justify-between align-center" style="margin-bottom: 2rem;">
+    <h2>🎮 Paper Trading (Simulación)</h2>
+    <div class="glass-panel" style="padding: 0.5rem 1.5rem; display: flex; gap: 2rem;">
+        <div>
+            <span class="text-muted" style="font-size: 0.8rem; display: block;">Balance Global</span>
+            <strong style="font-size: 1.2rem;">${{ total_balance|floatformat:2 }}</strong>
+        </div>
+        <div>
+            <span class="text-muted" style="font-size: 0.8rem; display: block;">Beneficio (PnL)</span>
+            <strong style="font-size: 1.2rem;" class="{% if total_pnl > 0 %}text-success{% elif total_pnl < 0 %}text-danger{% endif %}">
+                ${{ total_pnl|floatformat:2 }}
+            </strong>
+        </div>
+    </div>
+</div>
+
+<div class="glass-panel">
+    <h3 class="panel-title">Tus Carteras Virtuales</h3>
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Nombre</th>
+                    <th>Bot Asociado</th>
+                    <th>Balance Inicial</th>
+                    <th>Balance Actual</th>
+                    <th>PnL</th>
+                    <th>Rentabilidad</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for account in accounts %}
+                <tr>
+                    <td><strong>{{ account.name }}</strong></td>
+                    <td>
+                        {% if account.bot %}
+                            <a href="{% url 'live_trading:edit' account.bot.id %}">{{ account.bot.name }}</a>
+                        {% else %}
+                            <span class="text-muted">-</span>
+                        {% endif %}
+                    </td>
+                    <td class="font-mono">${{ account.initial_balance|floatformat:2 }}</td>
+                    <td class="font-mono">${{ account.current_balance|floatformat:2 }}</td>
+                    <td class="font-mono {% if account.total_pnl > 0 %}text-success{% elif account.total_pnl < 0 %}text-danger{% endif %}">
+                        ${{ account.total_pnl|floatformat:2 }}
+                    </td>
+                    <td class="font-mono {% if account.total_return_pct > 0 %}text-success{% elif account.total_return_pct < 0 %}text-danger{% endif %}">
+                        {{ account.total_return_pct|floatformat:2 }}%
+                    </td>
+                    <td>
+                        <a href="{% url 'paper_trading:paper_detail' account.id %}" class="btn btn-sm btn-secondary">Ver Cartera</a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="text-center text-muted" style="padding: 2rem;">
+                        No tienes ninguna cartera de Paper Trading activa.<br>
+                        Para empezar, crea un Bot en modo "Paper" y actívalo.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

@@ -49,6 +49,18 @@ class BacktestRun(TimeStampedModel):
         'Parámetros de estrategia',
         default=dict,
     )
+    trade_risk_pct = models.DecimalField(
+        'Riesgo por operación (%)',
+        max_digits=5,
+        decimal_places=2,
+        default=100.0,
+        help_text='Porcentaje del capital libre a usar en cada compra'
+    )
+    allow_pyramiding = models.BooleanField(
+        'Permitir Pyramiding',
+        default=False,
+        help_text='Permite comprar de nuevo aunque ya haya una posición abierta'
+    )
 
     # Resultados
     final_capital = models.DecimalField(

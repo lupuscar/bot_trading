@@ -143,7 +143,8 @@ class BaseStrategy(ABC):
         """
         return '1h'  # Por defecto
 
-    def get_param_schema(self) -> dict[str, dict[str, Any]]:
+    @classmethod
+    def get_parameters_schema(cls) -> dict[str, dict[str, Any]]:
         """
         Esquema de los parámetros configurables para la UI.
 
@@ -166,6 +167,17 @@ class BaseStrategy(ABC):
     def on_stop(self) -> None:
         """Hook ejecutado al detener la estrategia."""
         pass
+
+    def get_chart_indicators(self, data: pd.DataFrame) -> dict:
+        """
+        Calcula y devuelve los indicadores técnicos de la estrategia formateados
+        para graficarlos en Lightweight Charts.
+        
+        Returns:
+            Un diccionario donde las claves son los IDs de las líneas y el valor
+            es un dict con 'color', 'name', y 'data' (lista de dicts con time y value).
+        """
+        return {}
 
     # ------------------------------------------
     # Métodos de utilidad (NO sobreescribir)

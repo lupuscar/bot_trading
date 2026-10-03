@@ -12,14 +12,12 @@ urlpatterns = [
     # Dashboard principal
     path('', include('apps.dashboard.urls', namespace='dashboard')),
 
-    # API REST
-    path('api/v1/', include([
-        path('connectors/', include('apps.connectors.urls', namespace='connectors')),
-        path('strategies/', include('apps.strategies.urls', namespace='strategies')),
-        path('backtesting/', include('apps.backtesting.urls', namespace='backtesting')),
-        path('paper-trading/', include('apps.paper_trading.urls', namespace='paper_trading')),
-        path('live-trading/', include('apps.live_trading.urls', namespace='live_trading')),
-    ])),
+    # Vistas web (CRUD desde el dashboard)
+    path('connectors/', include('apps.connectors.urls', namespace='connectors')),
+    path('strategies/', include('apps.strategies.urls', namespace='strategies')),
+    path('bots/', include('apps.live_trading.urls', namespace='live_trading')),
+    path('backtesting/', include('apps.backtesting.urls', namespace='backtesting')),
+    path('paper-trading/', include('apps.paper_trading.urls', namespace='paper_trading')),
 ]
 
 # Debug toolbar en desarrollo

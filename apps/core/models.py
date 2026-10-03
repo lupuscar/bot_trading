@@ -115,3 +115,54 @@ class TradingMode(models.TextChoices):
     BACKTEST = 'backtest', 'Backtesting'
     PAPER = 'paper', 'Paper Trading (Simulado)'
     LIVE = 'live', 'Trading en Vivo'
+
+
+# ============================================
+# Datos de Mercado
+# ============================================
+
+class Candle(models.Model):
+    """
+    Datos OHLCV (Velas japonesas) históricos.
+    Idealmente manejado como una hypertable en TimescaleDB.
+    """
+    symbol = models.CharField('Símbolo', max_length=20, db_index=True)
+    timeframe = models.CharField('Timeframe', max_length=10, choices=TimeFrame.choices, db_index=True)
+    timestamp = models.DateTimeField('Fecha y hora', db_index=True)
+    open = models.DecimalField('Open', max_digits=20, decimal_places=8)
+    high = models.DecimalField('High', max_digits=20, decimal_places=8)
+    low = models.DecimalField('Low', max_digits=20, decimal_places=8)
+    close = models.DecimalField('Close', max_digits=20, decimal_places=8)
+    volume = models.DecimalField('Volumen', max_digits=20, decimal_places=8)
+
+    class Meta:
+        verbose_name = 'Vela (Candle)'
+        verbose_name_plural = 'Velas (Candles)'
+        unique_together = ['symbol', 'timeframe', 'timestamp']
+        ordering = ['-timestamp']
+        indexes = [
+            models.Index(fields=['symbol', 'timeframe', '-timestamp']),
+        ]
+
+    def __str__(self):
+        return f'{self.symbol} {self.timeframe} @ {self.timestamp}: {self.close}'
+
+# ============================================
+# Configuración del Sistema
+# ============================================
+
+class SystemSetting(models.Model):
+    """
+    Configuraciones globales del sistema y claves API.
+    Guarda pares clave-valor (ej: OPENAI_API_KEY, GEMINI_API_KEY).
+    """
+    key = models.CharField('Clave', max_length=100, unique=True, db_index=True)
+    value = models.CharField('Valor', max_length=500, blank=True)
+    description = models.CharField('Descripción', max_length=200, blank=True)
+
+    class Meta:
+        verbose_name = 'Configuración del Sistema'
+        verbose_name_plural = 'Configuraciones del Sistema'
+
+    def __str__(self):
+        return self.key

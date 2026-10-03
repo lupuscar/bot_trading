@@ -18,6 +18,24 @@
 
     <!-- CSS -->
     <link rel="stylesheet" href="{% load static %}{% static 'dashboard/css/main.css' %}">
+    
+    <style>
+        /* Estilos para modo pantalla completa */
+        .glass-panel:fullscreen {
+            background-color: var(--bg-color); /* Fondo oscuro en lugar de transparente */
+            width: 100vw;
+            height: 100vh;
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            border-radius: 0;
+            overflow: hidden;
+        }
+        .glass-panel:fullscreen #price-chart {
+            height: auto !important; /* Para que flex-grow funcione */
+            flex-grow: 1;
+        }
+    </style>
 
     {% block extra_head %}{% endblock %}
 </head>
@@ -28,13 +46,14 @@
             <h2>🤖 BotTrading</h2>
         </div>
         <ul class="sidebar-nav">
-            <li><a href="{% url 'dashboard:index' %}" class="active">📊 Dashboard</a></li>
-            <li><a href="#">🔌 Conectores</a></li>
-            <li><a href="#">🧠 Estrategias</a></li>
-            <li><a href="#">🤖 Bots</a></li>
-            <li><a href="#">📈 Backtesting</a></li>
-            <li><a href="#">📝 Paper Trading</a></li>
-            <li><a href="#">⚙️ Configuración</a></li>
+            <li><a href="{% url 'dashboard:index' %}" class="{% if request.resolver_match.app_name == 'dashboard' %}active{% endif %}">📊 Dashboard</a></li>
+            <li><a href="{% url 'connectors:list' %}" class="{% if request.resolver_match.app_name == 'connectors' %}active{% endif %}">🔌 Conectores</a></li>
+            <li><a href="{% url 'strategies:list' %}" class="{% if request.resolver_match.app_name == 'strategies' %}active{% endif %}">🧠 Estrategias</a></li>
+            <li><a href="{% url 'live_trading:list' %}" class="{% if request.resolver_match.app_name == 'live_trading' %}active{% endif %}">🤖 Bots</a></li>
+            <li><a href="{% url 'backtesting:run_list' %}" class="{% if request.resolver_match.app_name == 'backtesting' %}active{% endif %}">📈 Backtesting</a></li>
+            <li><a href="{% url 'paper_trading:paper_list' %}" class="{% if request.resolver_match.app_name == 'paper_trading' %}active{% endif %}">🎮 Paper Trading</a></li>
+            <li><a href="{% url 'dashboard:settings' %}" class="{% if request.path == '/settings/' %}active{% endif %}">⚙️ Configuración</a></li>
+            <li><a href="{% url 'admin:index' %}">🛡️ Admin</a></li>
         </ul>
     </nav>
 
@@ -42,12 +61,20 @@
     <main id="main-content" class="main-content">
         <header class="top-bar">
             <h1>{% block page_title %}Dashboard{% endblock %}</h1>
-            <div class="user-info">
-                {{ request.user.username }}
+            <div class="user-profile">
+                <div class="avatar">{{ request.user.username|make_list|first|upper }}</div>
+                <span>{{ request.user.username }}</span>
             </div>
         </header>
 
         <div class="content">
+            {% if messages %}
+            <ul class="messages">
+                {% for message in messages %}
+                <li class="message {{ message.tags }}">{{ message }}</li>
+                {% endfor %}
+            </ul>
+            {% endif %}
             {% block content %}{% endblock %}
         </div>
     </main>

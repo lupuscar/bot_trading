@@ -1,0 +1,227 @@
+{% extends 'dashboard/base.html' %}
+
+{% block title %}Detalle de Backtest | BotTrading{% endblock %}
+
+{% block extra_head %}
+<!-- TradingView Lightweight Charts para mostrar el Equity Curve -->
+<script src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
+{% endblock %}
+
+{% block page_title %}Resultados: {{ run.strategy.name }}{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 1.5rem;">
+    <a href="{% url 'backtesting:run_list' %}" class="btn btn-secondary btn-sm">← Volver al Historial</a>
+</div>
+
+{% if run.status == 'failed' %}
+<div class="glass-panel" style="border-left: 4px solid var(--danger);">
+    <h3 class="text-danger">❌ Error en la Simulación</h3>
+    <p class="font-mono" style="margin-top: 1rem; color: var(--text-secondary);">{{ run.error_message }}</p>
+</div>
+{% endif %}
+
+<div class="grid grid-cols-3">
+    <!-- Panel Resumen Izquierdo -->
+    <div class="glass-panel" style="max-height: 800px; overflow-y: auto;">
+        <h3 class="panel-title" style="margin-bottom: 1.5rem;">📋 Parámetros</h3>
+        <div class="flex col-dir gap-2" style="font-size: 0.9rem;">
+            <div class="flex justify-between border-b pb-2">
+                <span class="text-muted">Mercado:</span>
+                <strong class="font-mono text-info">{{ run.symbol }} ({{ run.timeframe }})</strong>
+            </div>
+            <div class="flex justify-between border-b pb-2">
+                <span class="text-muted">Período:</span>
+                <span>{{ run.start_date|date:"d M Y" }} - {{ run.end_date|date:"d M Y" }}</span>
+            </div>
+            <div class="flex justify-between border-b pb-2">
+                <span class="text-muted">Capital Inicial:</span>
+                <span class="font-mono">${{ run.initial_capital|floatformat:2 }}</span>
+            </div>
+            
+            {% if run.status == 'completed' %}
+            <div class="flex justify-between border-b pb-2" style="margin-top: 1rem;">
+                <span class="text-muted">Capital Final:</span>
+                <strong class="font-mono" style="font-size: 1.2rem;">${{ run.final_capital|floatformat:2 }}</strong>
+            </div>
+            <div class="flex justify-between border-b pb-2">
+                <span class="text-muted">Retorno Total:</span>
+                <strong class="{% if run.total_return_pct >= 0 %}text-success{% else %}text-danger{% endif %}" style="font-size: 1.1rem;">
+                    {{ run.total_return_pct|floatformat:2 }}%
+                </strong>
+            </div>
+            <div class="flex justify-between border-b pb-2">
+                <span class="text-muted">Max Drawdown:</span>
+                <strong class="text-danger">{{ run.max_drawdown_pct|floatformat:2 }}%</strong>
+            </div>
+            
+            <div class="flex justify-between border-b pb-2" style="margin-top: 1rem;">
+                <span class="text-muted">Total Operaciones:</span>
+                <span>{{ run.total_trades }}</span>
+            </div>
+            <div class="flex justify-between border-b pb-2">
+                <span class="text-muted">Win Rate:</span>
+                <span class="text-success">{{ run.win_rate|floatformat:1 }}% ({{ run.winning_trades }}W / {{ run.losing_trades }}L)</span>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Gráficos -->
+    <div class="col-span-2 flex col-dir gap-4">
+        <!-- Gráfico de Precio y Operaciones -->
+        <div class="glass-panel" id="price-panel">
+            <div class="flex justify-between align-center" style="margin-bottom: 0.5rem;">
+                <h3 class="panel-title" style="font-size: 0.9rem; margin: 0;">🕯️ Precio y Operaciones</h3>
+                <button class="btn btn-sm btn-secondary" onclick="document.getElementById('price-panel').requestFullscreen().catch(e => console.log(e));" title="Pantalla Completa">🔲</button>
+            </div>
+            {% if run.status == 'completed' %}
+                <div id="price-chart" style="width: 100%; height: 280px; flex-grow: 1;"></div>
+            {% else %}
+                <div style="height: 280px; display: flex; align-items: center; justify-content: center;" class="text-muted">
+                    Gráfico no disponible.
+                </div>
+            {% endif %}
+        </div>
+        
+        <!-- Gráfico de Capital (Equity Curve) -->
+        <div class="glass-panel">
+            <h3 class="panel-title" style="font-size: 0.9rem;">📈 Curva de Capital (Equity)</h3>
+            {% if run.status == 'completed' %}
+                <div id="equity-chart" style="width: 100%; height: 180px; margin-top: 0.5rem;"></div>
+            {% else %}
+                <div style="height: 180px; display: flex; align-items: center; justify-content: center;" class="text-muted">
+                    Gráfico no disponible.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+{% if run.status == 'completed' and run.results_data.trades %}
+<div class="glass-panel" style="margin-top: 1.5rem;">
+    <h3 class="panel-title">📝 Registro de Operaciones</h3>
+    <div class="table-container" style="max-height: 400px; overflow-y: auto; margin-top: 1rem;">
+        <table>
+            <thead>
+                <tr>
+                    <th>Fecha</th>
+                    <th>Tipo</th>
+                    <th>Razón</th>
+                    <th>Cantidad</th>
+                    <th>Precio</th>
+                    <th>Comisión</th>
+                    <th>PnL</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for t in run.results_data.trades reversed %}
+                <tr>
+                    <td class="font-mono text-muted" style="font-size: 0.8rem;">{{ t.timestamp|slice:"0:10" }} {{ t.timestamp|slice:"11:16" }}</td>
+                    <td>
+                        <span class="badge {% if t.side == 'buy' %}success{% else %}danger{% endif %}">{{ t.side|upper }}</span>
+                    </td>
+                    <td class="text-muted">{{ t.reason|default:"-" }}</td>
+                    <td class="font-mono">{{ t.amount|floatformat:4 }}</td>
+                    <td class="font-mono">${{ t.price|floatformat:2 }}</td>
+                    <td class="font-mono text-danger">${{ t.commission|floatformat:2 }}</td>
+                    
+                    {% if t.side == 'sell' %}
+                        <td class="font-mono {% if t.pnl > 0 %}text-success{% else %}text-danger{% endif %}">
+                            ${{ t.pnl|floatformat:2 }} ({{ t.pnl_pct|floatformat:2 }}%)
+                        </td>
+                    {% else %}
+                        <td class="text-muted">-</td>
+                    {% endif %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+{% if run.status == 'completed' %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // --- 1. EQUITY CURVE CHART ---
+        const equityContainer = document.getElementById('equity-chart');
+        if(equityContainer) {
+            const equityChart = LightweightCharts.createChart(equityContainer, {
+                layout: { background: { type: 'solid', color: 'transparent' }, textColor: '#94a3b8' },
+                grid: { vertLines: { color: 'rgba(255, 255, 255, 0.05)' }, horzLines: { color: 'rgba(255, 255, 255, 0.05)' } },
+                crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
+                rightPriceScale: { borderColor: 'rgba(255, 255, 255, 0.1)' },
+                timeScale: { borderColor: 'rgba(255, 255, 255, 0.1)', timeVisible: true }
+            });
+
+            const lineSeries = equityChart.addLineSeries({
+                color: '#3b82f6',
+                lineWidth: 2,
+                crosshairMarkerVisible: true,
+                crosshairMarkerRadius: 4,
+            });
+
+            const ro1 = new ResizeObserver(() => equityChart.resize(equityContainer.clientWidth, equityContainer.clientHeight || 180));
+            ro1.observe(equityContainer);
+
+            try {
+                const eqData = JSON.parse('{{ equity_curve_json|escapejs }}');
+                if(eqData && eqData.length > 0) {
+                    lineSeries.setData(eqData);
+                    equityChart.timeScale().fitContent();
+                }
+            } catch(e) { console.error("Error cargando equity curve:", e); }
+        }
+
+        // --- 2. PRICE & TRADES CHART ---
+        const priceContainer = document.getElementById('price-chart');
+        if(priceContainer) {
+            const priceChart = LightweightCharts.createChart(priceContainer, {
+                layout: { background: { type: 'solid', color: 'transparent' }, textColor: '#94a3b8' },
+                grid: { vertLines: { color: 'rgba(255, 255, 255, 0.05)' }, horzLines: { color: 'rgba(255, 255, 255, 0.05)' } },
+                crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
+                rightPriceScale: { borderColor: 'rgba(255, 255, 255, 0.1)' },
+                timeScale: { borderColor: 'rgba(255, 255, 255, 0.1)', timeVisible: true }
+            });
+
+            const candlestickSeries = priceChart.addCandlestickSeries({
+                upColor: '#10b981', downColor: '#ef4444', borderVisible: false,
+                wickUpColor: '#10b981', wickDownColor: '#ef4444'
+            });
+
+            const ro2 = new ResizeObserver(() => priceChart.resize(priceContainer.clientWidth, priceContainer.clientHeight || 280));
+            ro2.observe(priceContainer);
+
+            try {
+                const chartData = JSON.parse('{{ chart_data_json|escapejs }}');
+                if(chartData && chartData.length > 0) {
+                    candlestickSeries.setData(chartData);
+                    priceChart.timeScale().fitContent();
+                }
+
+                const indicatorsData = JSON.parse('{{ indicators_json|escapejs }}');
+                if(indicatorsData && Object.keys(indicatorsData).length > 0) {
+                    for(const [key, indicator] of Object.entries(indicatorsData)) {
+                        const line = priceChart.addLineSeries({
+                            color: indicator.color,
+                            lineWidth: 2,
+                            title: indicator.name,
+                            crosshairMarkerVisible: false,
+                        });
+                        line.setData(indicator.data);
+                    }
+                }
+                
+                const markersData = JSON.parse('{{ markers_json|escapejs }}');
+                if(markersData && markersData.length > 0) {
+                    candlestickSeries.setMarkers(markersData);
+                }
+            } catch(e) { console.error("Error cargando price chart:", e); }
+        }
+    });
+</script>
+{% endif %}
+{% endblock %}

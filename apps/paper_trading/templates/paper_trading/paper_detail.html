@@ -1,0 +1,106 @@
+{% extends 'dashboard/base.html' %}
+
+{% block title %}{{ account.name }} | Paper Trading{% endblock %}
+
+{% block content %}
+<div class="flex justify-between align-center" style="margin-bottom: 2rem;">
+    <div>
+        <h2>{{ account.name }}</h2>
+        <span class="text-muted">Cartera Virtual</span>
+    </div>
+    <a href="{% url 'paper_trading:paper_list' %}" class="btn btn-secondary">← Volver al listado</a>
+</div>
+
+<div class="grid grid-cols-4 gap-4" style="margin-bottom: 2rem;">
+    <div class="glass-panel text-center">
+        <h4 class="text-muted" style="margin: 0; font-size: 0.9rem;">Balance Inicial</h4>
+        <div class="font-mono" style="font-size: 1.5rem; margin-top: 0.5rem;">${{ account.initial_balance|floatformat:2 }}</div>
+    </div>
+    <div class="glass-panel text-center">
+        <h4 class="text-muted" style="margin: 0; font-size: 0.9rem;">Balance Actual</h4>
+        <div class="font-mono" style="font-size: 1.5rem; margin-top: 0.5rem;">${{ account.current_balance|floatformat:2 }}</div>
+    </div>
+    <div class="glass-panel text-center">
+        <h4 class="text-muted" style="margin: 0; font-size: 0.9rem;">PnL Total</h4>
+        <div class="font-mono {% if account.total_pnl > 0 %}text-success{% elif account.total_pnl < 0 %}text-danger{% endif %}" style="font-size: 1.5rem; margin-top: 0.5rem;">
+            ${{ account.total_pnl|floatformat:2 }}
+        </div>
+    </div>
+    <div class="glass-panel text-center">
+        <h4 class="text-muted" style="margin: 0; font-size: 0.9rem;">Rentabilidad</h4>
+        <div class="font-mono {% if account.total_return_pct > 0 %}text-success{% elif account.total_return_pct < 0 %}text-danger{% endif %}" style="font-size: 1.5rem; margin-top: 0.5rem;">
+            {{ account.total_return_pct|floatformat:2 }}%
+        </div>
+    </div>
+</div>
+
+<div class="glass-panel" style="margin-bottom: 2rem;">
+    <h3 class="panel-title">🟢 Posiciones Abiertas ({{ open_trades.count }})</h3>
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Símbolo</th>
+                    <th>Tipo</th>
+                    <th>Cantidad</th>
+                    <th>Precio de Entrada</th>
+                    <th>Fecha de Apertura</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for trade in open_trades %}
+                <tr>
+                    <td><strong>{{ trade.symbol }}</strong></td>
+                    <td><span class="badge {% if trade.side == 'buy' %}success{% else %}danger{% endif %}">{{ trade.side|upper }}</span></td>
+                    <td class="font-mono">{{ trade.amount|floatformat:6 }}</td>
+                    <td class="font-mono">${{ trade.entry_price|floatformat:2 }}</td>
+                    <td class="text-muted">{{ trade.created_at|date:"d/m/Y H:i:s" }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="text-center text-muted">No hay posiciones abiertas en este momento.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="glass-panel">
+    <h3 class="panel-title">📋 Historial de Operaciones Cerradas</h3>
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Símbolo</th>
+                    <th>Tipo</th>
+                    <th>Cantidad</th>
+                    <th>Precio Entrada</th>
+                    <th>Precio Salida</th>
+                    <th>PnL</th>
+                    <th>Fecha Cierre</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for trade in closed_trades %}
+                <tr>
+                    <td><strong>{{ trade.symbol }}</strong></td>
+                    <td><span class="badge {% if trade.side == 'buy' %}success{% else %}danger{% endif %}">{{ trade.side|upper }}</span></td>
+                    <td class="font-mono">{{ trade.amount|floatformat:6 }}</td>
+                    <td class="font-mono">${{ trade.entry_price|floatformat:2 }}</td>
+                    <td class="font-mono">${{ trade.exit_price|floatformat:2 }}</td>
+                    <td class="font-mono {% if trade.pnl > 0 %}text-success{% elif trade.pnl < 0 %}text-danger{% endif %}">
+                        ${{ trade.pnl|floatformat:2 }}
+                    </td>
+                    <td class="text-muted">{{ trade.closed_at|date:"d/m/Y H:i:s" }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="text-center text-muted">Aún no se han cerrado operaciones.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

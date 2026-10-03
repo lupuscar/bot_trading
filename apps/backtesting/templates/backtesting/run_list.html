@@ -1,0 +1,72 @@
+{% extends 'dashboard/base.html' %}
+
+{% block title %}Backtesting | BotTrading{% endblock %}
+{% block page_title %}Ejecuciones de Backtesting{% endblock %}
+
+{% block content %}
+<div class="glass-panel">
+    <div class="panel-header">
+        <h2 class="panel-title">📊 Historial de Backtests</h2>
+        <a href="{% url 'backtesting:run_create' %}" class="btn btn-primary">Nuevo Backtest</a>
+    </div>
+
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Fecha</th>
+                    <th>Estrategia</th>
+                    <th>Símbolo</th>
+                    <th>Período</th>
+                    <th>Retorno Total</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for run in runs %}
+                <tr>
+                    <td>{{ run.created_at|date:"Y-m-d H:i" }}</td>
+                    <td>{{ run.strategy.name }}</td>
+                    <td class="font-mono">{{ run.symbol }} ({{ run.timeframe }})</td>
+                    <td>{{ run.start_date|date:"Y-m-d" }} a {{ run.end_date|date:"Y-m-d" }}</td>
+                    
+                    {% if run.status == 'completed' %}
+                        <td class="font-mono {% if run.total_return_pct >= 0 %}text-success{% else %}text-danger{% endif %}">
+                            {{ run.total_return_pct|floatformat:2 }}%
+                        </td>
+                    {% else %}
+                        <td class="text-muted">-</td>
+                    {% endif %}
+                    
+                    <td>
+                        {% if run.status == 'completed' %}
+                            <span class="badge success">COMPLETADO</span>
+                        {% elif run.status == 'failed' %}
+                            <span class="badge danger">FALLIDO</span>
+                        {% elif run.status == 'running' %}
+                            <span class="badge warning">EJECUTANDO...</span>
+                        {% else %}
+                            <span class="badge">PENDIENTE</span>
+                        {% endif %}
+                    </td>
+                    <td style="display: flex; gap: 0.5rem; justify-content: center;">
+                        <a href="{% url 'backtesting:run_detail' run.id %}" class="btn btn-sm btn-secondary">Ver</a>
+                        <form method="POST" action="{% url 'backtesting:run_delete' run.id %}" onsubmit="return confirm('¿Seguro que quieres eliminar este backtest?');" style="margin: 0;">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-sm btn-danger" title="Eliminar">🗑️</button>
+                        </form>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" style="text-align: center; padding: 2rem 0;" class="text-muted">
+                        No has realizado ningún backtest todavía. ¡Haz clic en "Nuevo Backtest" para empezar!
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

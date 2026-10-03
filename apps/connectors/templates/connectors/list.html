@@ -1,0 +1,93 @@
+{% extends 'dashboard/base.html' %}
+
+{% block title %}Conectores | BotTrading{% endblock %}
+{% block page_title %}Conexiones a Exchanges{% endblock %}
+
+{% block content %}
+<div class="page-actions">
+    <h2>{{ connections.count }} conexión{{ connections.count|pluralize:"es" }} configurada{{ connections.count|pluralize:"s" }}</h2>
+    <a href="{% url 'connectors:create' %}" class="btn btn-primary">+ Nueva Conexión</a>
+</div>
+
+<div class="glass-panel animate-fade-in">
+    {% if connections %}
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Nombre</th>
+                    <th>Exchange</th>
+                    <th>Mercado</th>
+                    <th>Modo</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for conn in connections %}
+                <tr>
+                    <td style="font-weight: 600;">{{ conn.name }}</td>
+                    <td>
+                        <span class="font-mono" style="color: var(--info);">{{ conn.exchange_id|upper }}</span>
+                    </td>
+                    <td>{{ conn.get_market_type_display }}</td>
+                    <td>
+                        {% if conn.is_testnet %}
+                        <span class="badge warning">Testnet</span>
+                        {% else %}
+                        <span class="badge danger">Live</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if conn.is_active %}
+                        <span class="badge success">Activa</span>
+                        {% else %}
+                        <span class="badge" style="background: rgba(255,255,255,0.1); color: var(--text-muted);">Inactiva</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="actions-cell">
+                            <a href="{% url 'connectors:edit' conn.pk %}" class="btn btn-secondary btn-sm">✏️ Editar</a>
+                            <button class="btn btn-success btn-sm"
+                                    onclick="testConnection({{ conn.pk }})"
+                                    id="test-btn-{{ conn.pk }}">
+                                🔌 Test
+                            </button>
+                            <a href="{% url 'connectors:delete' conn.pk %}" class="btn btn-danger btn-sm">🗑️</a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <span class="empty-state-icon">🔌</span>
+        <h3>Sin conexiones</h3>
+        <p>Añade tu primera conexión a un exchange para empezar a operar.</p>
+        <a href="{% url 'connectors:create' %}" class="btn btn-primary">+ Nueva Conexión</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+async function testConnection(pk) {
+    const btn = document.getElementById(`test-btn-${pk}`);
+    const originalText = btn.textContent;
+    btn.textContent = '⏳ Probando...';
+    btn.disabled = true;
+    try {
+        const resp = await fetch(`/connectors/${pk}/test/`);
+        const data = await resp.json();
+        btn.textContent = data.success ? '✅ OK' : '❌ Fallo';
+        setTimeout(() => { btn.textContent = originalText; btn.disabled = false; }, 3000);
+    } catch(e) {
+        btn.textContent = '❌ Error';
+        setTimeout(() => { btn.textContent = originalText; btn.disabled = false; }, 3000);
+    }
+}
+</script>
+{% endblock %}

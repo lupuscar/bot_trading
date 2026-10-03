@@ -137,7 +137,7 @@ class BinanceConnector(BaseConnector):
 
         df = pd.DataFrame(all_ohlcv, columns=['timestamp', 'open', 'high', 'low', 'close', 'volume'])
         if not df.empty:
-            df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms')
+            df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms', utc=True)
         return df
 
     def get_available_symbols(self) -> list[str]:

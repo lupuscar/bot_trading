@@ -11,6 +11,7 @@ services:
       - "traefik.http.routers.bottrading.entrypoints=websecure"
       - "traefik.http.routers.bottrading.tls.certresolver=myresolver"
       - "traefik.http.services.bottrading.loadbalancer.server.port=80"
+      - "traefik.http.routers.bottrading.middlewares=filtro-ip@file, limite-peticiones@file, cabeceras-seguras@file"
       - "traefik.docker.network=proxy-network"
 
 networks:

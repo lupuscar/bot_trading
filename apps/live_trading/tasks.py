@@ -66,13 +66,12 @@ def _process_single_bot(bot: TradingBot):
         strategy_instance = strategy_class(name=bot.strategy.name, params=bot.strategy.parameters)
         
         limit = strategy_instance.get_min_data_points() + 10
-        # Start date un poco arbitraria al pasado, el limit restringe
-        start_date = timezone.now() - timezone.timedelta(days=30) 
-        
+        # Para operar en vivo o paper trading necesitamos los datos más recientes.
+        # Si no pasamos start_date, CCXT nos traerá las últimas 'limit' velas actuales.
         df = connector.get_historical_data(
             symbol=bot.symbol,
             timeframe=bot.timeframe,
-            start=start_date,
+            start=None,
             limit=limit
         )
 
@@ -166,9 +165,13 @@ def _execute_paper_trade(bot: TradingBot, signal, last_candle):
             commission = revenue * commission_rate
             net_revenue = revenue - commission
             
-            # El coste original fue (amount * entry_price) + commission (ya descontada del balance),
-            # pero el pnl de la operación se puede calcular como ingreso neto - coste bruto sin comision extra
-            pnl = net_revenue - (pos.amount * pos.entry_price)
+            # El coste original fue (amount * entry_price) + commission (ya descontada del balance).
+            # Para que el PnL refleje la realidad, debemos restarle también la comisión de entrada al beneficio bruto.
+            entry_cost_gross = pos.amount * pos.entry_price
+            entry_commission = entry_cost_gross * commission_rate
+            entry_cost_total = entry_cost_gross + entry_commission
+            
+            pnl = net_revenue - entry_cost_total
             
             account.current_balance += net_revenue
             account.save(update_fields=['current_balance', 'updated_at'])

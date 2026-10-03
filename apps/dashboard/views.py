@@ -146,13 +146,14 @@ def index(request):
 def get_chart_data(request):
     """
     API endpoint: devuelve datos de velas para el gráfico.
-    Acepta ?symbol=BTC/USDT&timeframe=1d&source=auto
+    Acepta ?symbol=BTC/USDT&timeframe=1d&source=auto&bot_id=1
     source: 'db' (solo BD), 'binance' (solo API), 'auto' (BD → fallback Binance)
     """
     import time
     symbol = request.GET.get('symbol', 'BTC/USDT')
     timeframe = request.GET.get('timeframe', '1d')
     source = request.GET.get('source', 'auto')
+    bot_id = request.GET.get('bot_id')
 
     data = []
 
@@ -171,12 +172,27 @@ def get_chart_data(request):
             data = binance_data
             source = 'binance'
 
+    markers = []
+    if bot_id:
+        from apps.paper_trading.models import PaperTrade
+        trades = PaperTrade.objects.filter(account__bot_id=bot_id, symbol=symbol)
+        for t in trades:
+            ts = int(t.created_at.timestamp())
+            markers.append({
+                'time': ts,
+                'position': 'belowBar' if t.side == 'buy' else 'aboveBar',
+                'color': '#10b981' if t.side == 'buy' else '#ef4444',
+                'shape': 'arrowUp' if t.side == 'buy' else 'arrowDown',
+                'text': f"{t.side.upper()} {t.amount:.2f} @ {t.entry_price:.2f}"
+            })
+
     return JsonResponse({
         'data': data,
         'symbol': symbol,
         'timeframe': timeframe,
         'count': len(data),
         'source': 'db' if source == 'db' and data and not needs_update else ('binance' if data else 'empty'),
+        'markers': markers,
     })
 
 import sys

@@ -31,6 +31,10 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml up --build -d
 echo "📂 Recolectando archivos estáticos de Django..."
 docker compose exec -T web python manage.py collectstatic --noinput --settings=config.settings.prod
 
+# 5. Crear usuario administrador por defecto si no existe
+echo "👤 Comprobando/Creando usuario administrador por defecto..."
+docker compose exec -T web python manage.py shell -c "from django.contrib.auth import get_user_model; User = get_user_model(); User.objects.filter(username='admin').exists() or User.objects.create_superuser('admin', 'admin@bottrading.com', 'admin123')"
+
 echo "✅ ¡Despliegue completado con éxito!"
 echo "🌐 Tu bot está corriendo en segundo plano."
 echo "Para ver los logs en tiempo real, ejecuta: docker compose logs -f web"

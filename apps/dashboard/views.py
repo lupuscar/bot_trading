@@ -33,81 +33,71 @@ def _get_chart_data_from_db(symbol, timeframe, limit=200):
     return data
 
 
+_cached_dashboard_connector = None
+
 def _get_chart_data_from_binance(symbol, timeframe, limit=200):
     """
-    Obtener datos de velas directamente de Binance API y guardarlos en la BD para futuro uso (caché local).
+    Obtener datos de velas de Binance (solo las necesarias) y actualizar la BD local.
+    Devuelve las velas combinadas de la BD.
     """
+    global _cached_dashboard_connector
     try:
-        from apps.connectors.crypto.binance import BinanceConnector
-
-        connector = BinanceConnector(
-            name='dashboard_public',
-            market_type='crypto',
-            config={'testnet': False}
-        )
-        if not connector.connect():
-            logger.warning("No se pudo conectar a Binance para datos del gráfico.")
-            return []
+        if not _cached_dashboard_connector:
+            from apps.connectors.crypto.binance import BinanceConnector
+            _cached_dashboard_connector = BinanceConnector(
+                name='dashboard_public',
+                market_type='crypto',
+                config={'testnet': False}
+            )
+            if not _cached_dashboard_connector.connect():
+                logger.warning("No se pudo conectar a Binance para datos del gráfico.")
+                _cached_dashboard_connector = None
+                return _get_chart_data_from_db(symbol, timeframe, limit)
+        
+        connector = _cached_dashboard_connector
 
         try:
-            # Al pasar start=None, ccxt traerá las últimas 'limit' velas más recientes.
-            df = connector.get_historical_data(
-                symbol=symbol,
-                timeframe=timeframe,
-                start=None,
-                limit=limit,
-            )
-
-            if df.empty:
-                return []
-
-            data = []
-            new_candles = []
-            
-            # Obtener el último timestamp guardado para no duplicar
+            # Obtener el último timestamp guardado para descargar solo lo nuevo
             last_candle = Candle.objects.filter(symbol=symbol, timeframe=timeframe).order_by('-timestamp').first()
             last_ts = last_candle.timestamp if last_candle else None
             
+            # ccxt traerá velas desde 'start' si existe, de lo contrario las más recientes.
+            df = connector.get_historical_data(
+                symbol=symbol,
+                timeframe=timeframe,
+                start=last_ts,
+                limit=limit if not last_ts else None, 
+            )
+
+            if df.empty:
+                return _get_chart_data_from_db(symbol, timeframe, limit)
+
+            # Usar update_or_create porque la última vela (en last_ts) podía estar incompleta
             for _, row in df.iterrows():
-                ts = row['timestamp']
+                Candle.objects.update_or_create(
+                    symbol=symbol,
+                    timeframe=timeframe,
+                    timestamp=row['timestamp'],
+                    defaults={
+                        'open': row['open'],
+                        'high': row['high'],
+                        'low': row['low'],
+                        'close': row['close'],
+                        'volume': row['volume']
+                    }
+                )
                 
-                # Preparar para guardar en BD si es más reciente o no existe
-                if not last_ts or ts > last_ts:
-                    new_candles.append(Candle(
-                        symbol=symbol,
-                        timeframe=timeframe,
-                        timestamp=ts,
-                        open=row['open'],
-                        high=row['high'],
-                        low=row['low'],
-                        close=row['close'],
-                        volume=row['volume']
-                    ))
-
-                if timeframe == '1d':
-                    time_val = ts.strftime('%Y-%m-%d')
-                else:
-                    time_val = int(ts.timestamp())
-
-                data.append({
-                    'time': time_val,
-                    'open': float(row['open']),
-                    'high': float(row['high']),
-                    'low': float(row['low']),
-                    'close': float(row['close']),
-                })
-                
-            # Guardar en BD para futuras peticiones (Bulk create)
-            if new_candles:
-                Candle.objects.bulk_create(new_candles, ignore_conflicts=True)
-                
-            return data
+            # Una vez la BD está actualizada con las velas nuevas, 
+            # delegamos en la función de la BD para que formatee y devuelva las últimas N.
+            return _get_chart_data_from_db(symbol, timeframe, limit)
+            
         finally:
-            connector.disconnect()
+            # NO desconectamos el conector aquí para mantener la caché global
+            pass
 
     except Exception as e:
         logger.error(f"Error obteniendo datos de Binance: {e}")
-        return []
+        return _get_chart_data_from_db(symbol, timeframe, limit)
 
 
 def _get_celery_status():
@@ -159,6 +149,7 @@ def get_chart_data(request):
     Acepta ?symbol=BTC/USDT&timeframe=1d&source=auto
     source: 'db' (solo BD), 'binance' (solo API), 'auto' (BD → fallback Binance)
     """
+    import time
     symbol = request.GET.get('symbol', 'BTC/USDT')
     timeframe = request.GET.get('timeframe', '1d')
     source = request.GET.get('source', 'auto')
@@ -168,15 +159,24 @@ def get_chart_data(request):
     if source in ('db', 'auto'):
         data = _get_chart_data_from_db(symbol, timeframe)
 
-    if not data and source in ('binance', 'auto'):
-        data = _get_chart_data_from_binance(symbol, timeframe)
+    needs_update = not data
+    if source == 'auto':
+        # Como hemos optimizado la descarga para pedir solo la última vela desde la caché,
+        # forzamos SIEMPRE la actualización para tener el precio real en la vela actual incompleta.
+        needs_update = True
+
+    if needs_update and source in ('binance', 'auto'):
+        binance_data = _get_chart_data_from_binance(symbol, timeframe)
+        if binance_data:
+            data = binance_data
+            source = 'binance'
 
     return JsonResponse({
         'data': data,
         'symbol': symbol,
         'timeframe': timeframe,
         'count': len(data),
-        'source': 'db' if source == 'db' and data else ('binance' if data else 'empty'),
+        'source': 'db' if source == 'db' and data and not needs_update else ('binance' if data else 'empty'),
     })
 
 import sys

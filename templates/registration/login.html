@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - BotTrading</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    {% load static %}
+    <!-- CSS (reutilizamos el estilo del dashboard) -->
+    <link rel="stylesheet" href="{% static 'dashboard/css/main.css' %}">
+
+    <style>
+        body {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            background-color: var(--bg-color);
+        }
+
+        .login-container {
+            width: 100%;
+            max-width: 400px;
+            padding: 2.5rem;
+            text-align: center;
+        }
+
+        .login-container h1 {
+            margin-bottom: 2rem;
+            color: var(--text-color);
+            font-size: 2rem;
+            font-weight: 600;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+            text-align: left;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            background-color: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-color);
+            font-family: inherit;
+            font-size: 1rem;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            box-sizing: border-box;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(41, 98, 255, 0.2);
+        }
+
+        .btn-primary {
+            width: 100%;
+            padding: 0.75rem;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.2s, transform 0.1s;
+        }
+
+        .btn-primary:hover {
+            background-color: var(--primary-hover);
+        }
+
+        .btn-primary:active {
+            transform: translateY(1px);
+        }
+
+        .error-messages {
+            color: var(--danger-color);
+            margin-bottom: 1.5rem;
+            font-size: 0.9rem;
+            padding: 1rem;
+            background-color: rgba(211, 47, 47, 0.1);
+            border-radius: 8px;
+            border: 1px solid rgba(211, 47, 47, 0.2);
+            text-align: left;
+        }
+        
+        .error-messages ul {
+            margin: 0;
+            padding-left: 1.2rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="glass-panel login-container">
+        <h1>🤖 BotTrading</h1>
+        
+        {% if form.errors %}
+        <div class="error-messages">
+            <p>Usuario o contraseña incorrectos.</p>
+        </div>
+        {% endif %}
+
+        <form method="post" action="{% url 'login' %}">
+            {% csrf_token %}
+            
+            <div class="form-group">
+                <label for="id_username">Usuario</label>
+                <input type="text" name="username" autofocus autocapitalize="none" autocomplete="username" maxlength="150" required id="id_username" placeholder="Tu usuario">
+            </div>
+            
+            <div class="form-group">
+                <label for="id_password">Contraseña</label>
+                <input type="password" name="password" autocomplete="current-password" required id="id_password" placeholder="Tu contraseña">
+            </div>
+            
+            <input type="hidden" name="next" value="{{ next|default:'/' }}">
+            <button type="submit" class="btn-primary">Entrar al Dashboard</button>
+        </form>
+    </div>
+</body>
+</html>

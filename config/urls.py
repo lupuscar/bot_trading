@@ -9,6 +9,9 @@ urlpatterns = [
     # Admin de Django
     path('admin/', admin.site.urls),
 
+    # Autenticación
+    path('accounts/', include('django.contrib.auth.urls')),
+
     # Dashboard principal
     path('', include('apps.dashboard.urls', namespace='dashboard')),
 

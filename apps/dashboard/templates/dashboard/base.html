@@ -61,9 +61,20 @@
     <main id="main-content" class="main-content">
         <header class="top-bar">
             <h1>{% block page_title %}Dashboard{% endblock %}</h1>
-            <div class="user-profile">
-                <div class="avatar">{{ request.user.username|make_list|first|upper }}</div>
-                <span>{{ request.user.username }}</span>
+            <div class="user-profile" x-data="{ open: false }" @click="open = !open" @click.away="open = false" style="position: relative; cursor: pointer; user-select: none; transition: border-color 0.2s; gap: 8px;" :style="open ? 'border-color: var(--text-muted);' : ''">
+                <div class="avatar" style="flex-shrink: 0;">{{ request.user.username|make_list|first|upper }}</div>
+                <span style="white-space: nowrap;">{{ request.user.username }}</span>
+                <svg style="width: 14px; height: 14px; flex-shrink: 0; transition: transform 0.2s; color: var(--text-muted);" :style="open ? 'transform: rotate(180deg)' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                
+                <div x-show="open" x-transition.opacity.duration.200ms style="display: none; position: absolute; top: calc(100% + 12px); right: 0; background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; padding: 0.5rem; min-width: 150px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4); z-index: 9999;">
+                    <form method="post" action="{% url 'logout' %}" style="margin: 0;">
+                        {% csrf_token %}
+                        <button type="submit" style="width: 100%; display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: none; border: none; color: var(--text-color); cursor: pointer; border-radius: 6px; text-align: left; font-size: 0.875rem; font-family: inherit; transition: background-color 0.2s, color 0.2s;" onmouseover="this.style.backgroundColor='rgba(211, 47, 47, 0.1)'; this.style.color='var(--danger-color)'" onmouseout="this.style.backgroundColor='transparent'; this.style.color='var(--text-color)'">
+                            <svg style="width: 16px; height: 16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+                            Cerrar Sesión
+                        </button>
+                    </form>
+                </div>
             </div>
         </header>
 

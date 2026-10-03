@@ -225,7 +225,17 @@
         if (rawData && rawData !== '[]') {
             try {
                 const parsedData = JSON.parse(rawData);
-                candlestickSeries.setData(parsedData);
+                
+                // Ajustar al timezone local
+                const tzOffset = new Date().getTimezoneOffset() * 60;
+                const localData = parsedData.map(d => {
+                    if (typeof d.time === 'number') {
+                        return {...d, time: d.time - tzOffset};
+                    }
+                    return d;
+                });
+                
+                candlestickSeries.setData(localData);
                 chart.timeScale().fitContent();
             } catch (error) {
                 console.error("Error parseando los datos del gráfico:", error);
@@ -247,7 +257,16 @@
                 const result = await resp.json();
 
                 if (result.data && result.data.length > 0) {
-                    candlestickSeries.setData(result.data);
+                    // Ajustar los timestamps al timezone local del navegador
+                    const tzOffset = new Date().getTimezoneOffset() * 60;
+                    const localData = result.data.map(d => {
+                        if (typeof d.time === 'number') {
+                            return {...d, time: d.time - tzOffset};
+                        }
+                        return d;
+                    });
+                    
+                    candlestickSeries.setData(localData);
                     chart.timeScale().fitContent();
 
                     // Update source badge

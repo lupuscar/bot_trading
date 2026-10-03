@@ -24,8 +24,8 @@ git pull origin main
 
 # 3. Construir y levantar contenedores en segundo plano
 echo "🐳 Reconstruyendo imágenes y levantando contenedores con Docker..."
-docker compose down
-docker compose up --build -d
+docker compose -f docker-compose.yml -f docker-compose.prod.yml down
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up --build -d
 
 # 4. Recolectar archivos estáticos para Nginx
 echo "📂 Recolectando archivos estáticos de Django..."

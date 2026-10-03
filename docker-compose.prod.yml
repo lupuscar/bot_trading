@@ -1,0 +1,18 @@
+services:
+  nginx:
+    # Eliminamos el mapeo de puertos que traía por defecto
+    ports: !reset []
+    networks:
+      - default
+      - proxy-network
+    labels:
+      - "traefik.enable=true"
+      # Sustituye 'bot.z2informatica.com' por el subdominio que vayas a usar
+      - "traefik.http.routers.bottrading.rule=Host(`bot.z2informatica.com`)"
+      - "traefik.http.routers.bottrading.entrypoints=websecure"
+      - "traefik.http.routers.bottrading.tls.certresolver=myresolver"
+      - "traefik.http.services.bottrading.loadbalancer.server.port=80"
+
+networks:
+  proxy-network:
+    external: true

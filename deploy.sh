@@ -24,13 +24,13 @@ git pull origin main
 
 # 3. Construir y levantar contenedores en segundo plano
 echo "🐳 Reconstruyendo imágenes y levantando contenedores con Docker..."
-docker-compose down
-docker-compose up --build -d
+docker compose down
+docker compose up --build -d
 
 # 4. Recolectar archivos estáticos para Nginx
 echo "📂 Recolectando archivos estáticos de Django..."
-docker-compose exec -T web python manage.py collectstatic --noinput --settings=config.settings.prod
+docker compose exec -T web python manage.py collectstatic --noinput --settings=config.settings.prod
 
 echo "✅ ¡Despliegue completado con éxito!"
 echo "🌐 Tu bot está corriendo en segundo plano."
-echo "Para ver los logs en tiempo real, ejecuta: docker-compose logs -f web"
+echo "Para ver los logs en tiempo real, ejecuta: docker compose logs -f web"

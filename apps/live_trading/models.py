@@ -160,3 +160,35 @@ class TradeRecord(TimeStampedModel):
 
     def __str__(self):
         return f'{self.side} {self.amount} {self.symbol} @ {self.price}'
+
+class BotLog(TimeStampedModel):
+    """
+    Registro de actividad y decisiones del bot en cada ciclo de ejecución.
+    """
+    class LogLevel(models.TextChoices):
+        INFO = 'info', 'INFO'
+        WARNING = 'warning', 'WARNING'
+        ERROR = 'error', 'ERROR'
+        SUCCESS = 'success', 'SUCCESS'
+
+    bot = models.ForeignKey(
+        TradingBot,
+        on_delete=models.CASCADE,
+        related_name='logs',
+        verbose_name='Bot'
+    )
+    level = models.CharField(
+        'Nivel',
+        max_length=20,
+        choices=LogLevel.choices,
+        default=LogLevel.INFO
+    )
+    message = models.TextField('Mensaje')
+
+    class Meta:
+        verbose_name = 'Log del Bot'
+        verbose_name_plural = 'Logs de Bots'
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"[{self.level.upper()}] {self.bot.name} - {self.created_at.strftime('%Y-%m-%d %H:%M:%S')}"

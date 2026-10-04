@@ -136,9 +136,14 @@
                             {% endif %}
                         </td>
                         <td style="text-align: right; vertical-align: middle;">
-                            <button class="btn btn-sm btn-secondary" onclick="viewBotOnChart('{{ bot.id }}', '{{ bot.symbol }}', '{{ bot.timeframe }}')">
-                                📊 Ver en Gráfico
-                            </button>
+                            <div style="display: flex; gap: 0.5rem; justify-content: flex-end;">
+                                <a href="{% url 'live_trading:logs' bot.id %}" class="btn btn-sm btn-secondary" title="Ver Actividad">
+                                    🧠
+                                </a>
+                                <button class="btn btn-sm btn-secondary" onclick="viewBotOnChart('{{ bot.id }}', '{{ bot.symbol }}', '{{ bot.timeframe }}')" title="Ver Gráfico">
+                                    📊
+                                </button>
+                            </div>
                         </td>
                     </tr>
                     {% empty %}

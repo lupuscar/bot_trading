@@ -182,3 +182,15 @@ def bot_trades(request, pk):
         'bot': bot,
         'trades': trades,
     })
+
+@login_required
+def bot_logs(request, pk):
+    """Historial de actividad de un bot."""
+    bot = get_object_or_404(TradingBot, pk=pk, user=request.user)
+    from apps.live_trading.models import BotLog
+    logs = BotLog.objects.filter(bot=bot).order_by('-created_at')[:200]
+    return render(request, 'bots/logs.html', {
+        'title': f'Actividad: {bot.name}',
+        'bot': bot,
+        'logs': logs,
+    })

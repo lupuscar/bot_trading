@@ -1,0 +1,54 @@
+{% extends 'dashboard/base.html' %}
+
+{% block title %}Actividad: {{ bot.name }} | BotTrading{% endblock %}
+{% block page_title %}🧠 Actividad: {{ bot.name }}{% endblock %}
+
+{% block content %}
+<div class="page-actions">
+    <h2>
+        <span class="font-mono" style="color: var(--info);">{{ bot.symbol }}</span>
+        · {{ bot.get_mode_display }}
+        · {{ logs.count }} registro{{ logs.count|pluralize:"s" }}
+    </h2>
+    <div style="display: flex; gap: 10px;">
+        <a href="{% url 'live_trading:trades' bot.id %}" class="btn btn-primary">Ver Operaciones</a>
+        <a href="{% url 'live_trading:list' %}" class="btn btn-secondary">← Volver</a>
+    </div>
+</div>
+
+<div class="glass-panel animate-fade-in" style="background: var(--surface); padding: 1.5rem; border-radius: 12px; border: 1px solid var(--border);">
+    {% if logs %}
+    <div style="font-family: 'Fira Code', monospace; font-size: 0.9rem; max-height: 70vh; overflow-y: auto; display: flex; flex-direction: column; gap: 8px;">
+        {% for log in logs %}
+        <div style="display: flex; gap: 15px; padding: 8px; border-bottom: 1px solid var(--border); align-items: flex-start;">
+            <div style="min-width: 140px; color: var(--text-muted); font-size: 0.85rem;">
+                {{ log.created_at|date:"d/m/Y H:i:s" }}
+            </div>
+            
+            <div style="min-width: 80px;">
+                {% if log.level == 'info' %}
+                <span class="badge" style="background: rgba(52, 152, 219, 0.1); color: #3498db; border: 1px solid rgba(52, 152, 219, 0.3);">INFO</span>
+                {% elif log.level == 'success' %}
+                <span class="badge" style="background: rgba(46, 204, 113, 0.1); color: #2ecc71; border: 1px solid rgba(46, 204, 113, 0.3);">SUCCESS</span>
+                {% elif log.level == 'warning' %}
+                <span class="badge" style="background: rgba(241, 196, 15, 0.1); color: #f1c40f; border: 1px solid rgba(241, 196, 15, 0.3);">WARN</span>
+                {% elif log.level == 'error' %}
+                <span class="badge" style="background: rgba(231, 76, 60, 0.1); color: #e74c3c; border: 1px solid rgba(231, 76, 60, 0.3);">ERROR</span>
+                {% endif %}
+            </div>
+
+            <div style="flex-grow: 1; line-height: 1.4; {% if log.level == 'error' %}color: #e74c3c;{% elif log.level == 'warning' %}color: #f1c40f;{% elif log.level == 'success' %}color: #2ecc71;{% else %}color: var(--text-primary);{% endif %}">
+                {{ log.message }}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <span class="empty-state-icon">🧠</span>
+        <h3>Sin actividad</h3>
+        <p>El bot no tiene ningún registro todavía. Asegúrate de que esté encendido.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

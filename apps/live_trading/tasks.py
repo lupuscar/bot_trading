@@ -7,12 +7,17 @@ from celery import shared_task
 from django.utils import timezone
 from django.utils.module_loading import import_string
 
-from apps.live_trading.models import TradingBot, TradeRecord
+from apps.live_trading.models import TradingBot, TradeRecord, BotLog
 from apps.paper_trading.models import PaperAccount, PaperTrade
 from apps.core.models import TradingMode, OrderSide
 
 logger = logging.getLogger(__name__)
 
+
+def _log(bot, level, msg):
+    logger_method = getattr(logger, level if level != 'success' else 'info')
+    logger_method(f"Bot {bot.name}: {msg}")
+    BotLog.objects.create(bot=bot, level=level, message=msg)
 
 @shared_task
 def process_trading_bots():
@@ -56,6 +61,7 @@ def _process_single_bot(bot: TradingBot):
     )
     
     if not connector.connect():
+        _log(bot, 'error', f"No se pudo conectar a {conn_model.name}")
         raise ConnectionError(f"No se pudo conectar a {conn_model.name}")
 
     try:
@@ -76,7 +82,7 @@ def _process_single_bot(bot: TradingBot):
         )
 
         if len(df) < strategy_instance.get_min_data_points():
-            logger.warning(f"Bot {bot.name}: Datos insuficientes ({len(df)} velas)")
+            _log(bot, 'warning', f"Datos insuficientes para operar ({len(df)} velas)")
             return
 
         # 3. Analizar y obtener señal
@@ -91,10 +97,10 @@ def _process_single_bot(bot: TradingBot):
         }
 
         if not signal.is_actionable:
-            logger.info(f"Bot {bot.name}: Señal HOLD o sin acción.")
+            _log(bot, 'info', f"Señal {signal.signal_type.upper()}: {signal.reason}")
             return
 
-        logger.info(f"Bot {bot.name}: Señal {signal.signal_type.upper()} detectada.")
+        _log(bot, 'info', f"Señal {signal.signal_type.upper()} detectada: {signal.reason}")
 
         # 4. Ejecutar (Paper o Live)
         if bot.mode == TradingMode.PAPER:
@@ -130,7 +136,7 @@ def _execute_paper_trade(bot: TradingBot, signal, last_candle):
     
     if signal.signal_type == 'buy':
         if open_positions.count() >= bot.max_open_positions:
-            logger.info(f"Bot {bot.name}: Límite de posiciones abiertas alcanzado ({bot.max_open_positions}).")
+            _log(bot, 'warning', f"Límite de posiciones abiertas alcanzado ({bot.max_open_positions}).")
             return
             
         risk_multiplier = Decimal(str(bot.risk_per_trade_pct)) / Decimal('100.0')
@@ -156,9 +162,9 @@ def _execute_paper_trade(bot: TradingBot, signal, last_candle):
                 entry_price=current_price,
                 status='open'
             )
-            logger.info(f"PAPER: Bot {bot.name} compró {trade_amount} {bot.symbol} a {current_price}")
+            _log(bot, 'success', f"Operación simulada: COMPRA de {trade_amount:.6f} {bot.symbol} a ${current_price:.2f}")
         else:
-            logger.warning(f"PAPER: Bot {bot.name} no tiene saldo suficiente para comprar.")
+            _log(bot, 'warning', f"Saldo insuficiente para comprar. Necesario: ${total_cost:.2f}, Disp: ${account.current_balance:.2f}")
 
     elif signal.signal_type == 'sell':
         for pos in open_positions:
@@ -182,7 +188,9 @@ def _execute_paper_trade(bot: TradingBot, signal, last_candle):
             pos.pnl = pnl
             pos.status = 'closed'
             pos.save()
-            logger.info(f"PAPER: Bot {bot.name} vendió {pos.amount} {bot.symbol}. PnL: {pnl}")
+            
+            pnl_type = 'ganancia' if pnl > 0 else 'pérdida'
+            _log(bot, 'success', f"Operación simulada: VENTA de {pos.amount:.6f} {bot.symbol} a ${current_price:.2f}. PnL: ${pnl:.2f} ({pnl_type})")
 
 
 def _execute_live_trade(bot: TradingBot, signal, connector):

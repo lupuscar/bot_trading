@@ -10,4 +10,5 @@ urlpatterns = [
     path('<int:pk>/delete/', views.bot_delete, name='delete'),
     path('<int:pk>/toggle/', views.bot_toggle, name='toggle'),
     path('<int:pk>/trades/', views.bot_trades, name='trades'),
+    path('<int:pk>/logs/', views.bot_logs, name='logs'),
 ]

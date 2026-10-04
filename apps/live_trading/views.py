@@ -164,7 +164,19 @@ def bot_toggle(request, pk):
 def bot_trades(request, pk):
     """Historial de operaciones de un bot."""
     bot = get_object_or_404(TradingBot, pk=pk, user=request.user)
-    trades = TradeRecord.objects.filter(bot=bot).order_by('-created_at')[:100]
+    
+    if bot.mode == 'paper':
+        from apps.paper_trading.models import PaperTrade
+        from django.db.models import F, ExpressionWrapper, DecimalField
+        
+        # En Paper Trading, anotamos los campos que espera la plantilla (price, cost)
+        trades = PaperTrade.objects.filter(account__bot=bot).annotate(
+            price=F('entry_price'),
+            cost=ExpressionWrapper(F('amount') * F('entry_price'), output_field=DecimalField())
+        ).order_by('-created_at')[:100]
+    else:
+        trades = TradeRecord.objects.filter(bot=bot).order_by('-created_at')[:100]
+        
     return render(request, 'bots/trades.html', {
         'title': f'Operaciones: {bot.name}',
         'bot': bot,

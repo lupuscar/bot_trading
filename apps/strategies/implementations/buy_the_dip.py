@@ -97,6 +97,7 @@ class BuyTheDipStrategy(BaseStrategy):
         rs = ema_up / ema_down
         df['RSI'] = 100 - (100 / (1 + rs))
         current_rsi = df['RSI'].iloc[-1]
+        previous_rsi = df['RSI'].iloc[-2] if len(df) >= 2 else current_rsi
 
         # 3. Lógica de Salida (Take Profit / Stop Loss)
         if position > 0 and avg_price > 0:
@@ -120,17 +121,19 @@ class BuyTheDipStrategy(BaseStrategy):
                 )
 
         # 4. Lógica de Entrada
-        if position == 0 and is_bull_market and current_rsi <= rsi_buy:
+        # CLAVE: En vez de comprar cuando el RSI está cayendo (cuchillo cayendo), 
+        # compramos cuando el RSI cruza hacia ARRIBA de la zona de sobreventa (confirma el rebote).
+        if position == 0 and is_bull_market and previous_rsi <= rsi_buy and current_rsi > rsi_buy:
             return Signal(
                 signal_type='buy',
                 symbol='',
                 timestamp=timestamp,
                 price=current_price,
-                reason=f"Pánico alcista (Precio > EMA{ema_period}, RSI = {current_rsi:.2f})"
+                reason=f"Rebote alcista detectado (Precio > EMA{ema_period}, RSI cruzó de {previous_rsi:.2f} a {current_rsi:.2f})"
             )
         
         estado_tendencia = "Alcista" if is_bull_market else "Bajista"
-        estado_pos = f"Hold (Entrada: {avg_price:.2f})" if position > 0 else "Buscando entrada"
+        estado_pos = f"Hold (Entrada: {avg_price:.2f})" if position > 0 else "Buscando rebote"
         return Signal(
             signal_type='hold',
             symbol='',

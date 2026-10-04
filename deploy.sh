@@ -28,10 +28,9 @@ find . -type d -name "__pycache__" -exec rm -r {} + 2>/dev/null || true
 find . -type f -name "*.pyc" -delete 2>/dev/null || true
 
 # 4. Construir y levantar contenedores
-# Usamos --build para que recompile las imágenes con el código nuevo.
-# No hacemos 'down' primero para evitar apagar la Base de Datos y causar caídas innecesarias.
-echo "🐳 Reconstruyendo imágenes y levantando contenedores con Docker..."
-docker compose -f docker-compose.yml -f docker-compose.prod.yml build
+# Usamos --build --no-cache para asegurar que CERO código antiguo se cuele por culpa del caché de Docker.
+echo "🐳 Reconstruyendo imágenes y levantando contenedores con Docker (Sin Caché)..."
+docker compose -f docker-compose.yml -f docker-compose.prod.yml build --no-cache
 docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 
 # 5. Recolectar archivos estáticos para Nginx

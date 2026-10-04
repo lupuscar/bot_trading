@@ -1,0 +1,39 @@
+{% extends 'dashboard/base.html' %}
+
+{% block title %}Nuevo Optimizador | BotTrading{% endblock %}
+{% block page_title %}Preguntar al Oráculo (Nuevo Optimizador){% endblock %}
+
+{% block content %}
+<div class="glass-panel" style="max-width: 600px; margin: 0 auto;">
+    <div class="panel-header">
+        <h2 class="panel-title">Lanzar Optimizador Múltiple</h2>
+    </div>
+
+    <form method="POST" class="form-container">
+        {% csrf_token %}
+        
+        <div class="form-group">
+            <label class="form-label" for="symbol">Símbolo (Par)</label>
+            <input type="text" id="symbol" name="symbol" class="form-input" value="BTC/USDT" required>
+            <small class="text-muted">Ej: BTC/USDT, ETH/USDT</small>
+        </div>
+        
+        <div class="form-group">
+            <label class="form-label" for="start_date">Fecha de Inicio</label>
+            <input type="datetime-local" id="start_date" name="start_date" class="form-input" required>
+        </div>
+        
+        <div class="form-group">
+            <label class="form-label" for="end_date">Fecha de Fin</label>
+            <input type="datetime-local" id="end_date" name="end_date" class="form-input" required>
+        </div>
+
+        <div class="form-actions" style="margin-top: 2rem;">
+            <button type="submit" class="btn btn-primary" style="width: 100%;">🚀 Iniciar Optimización Automática</button>
+        </div>
+        <p class="text-muted" style="text-align: center; margin-top: 1rem; font-size: 0.9rem;">
+            El oráculo probará todas las estrategias y temporalidades en segundo plano. Puede tardar unos minutos.
+        </p>
+    </form>
+</div>
+{% endblock %}

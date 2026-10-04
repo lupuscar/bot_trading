@@ -21,6 +21,7 @@ urlpatterns = [
     path('bots/', include('apps.live_trading.urls', namespace='live_trading')),
     path('backtesting/', include('apps.backtesting.urls', namespace='backtesting')),
     path('paper-trading/', include('apps.paper_trading.urls', namespace='paper_trading')),
+    path('optimizer/', include('apps.optimizer.urls', namespace='optimizer')),
 ]
 
 # Debug toolbar en desarrollo

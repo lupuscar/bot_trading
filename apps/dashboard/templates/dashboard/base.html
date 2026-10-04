@@ -51,6 +51,7 @@
             <li><a href="{% url 'strategies:list' %}" class="{% if request.resolver_match.app_name == 'strategies' %}active{% endif %}">🧠 Estrategias</a></li>
             <li><a href="{% url 'live_trading:list' %}" class="{% if request.resolver_match.app_name == 'live_trading' %}active{% endif %}">🤖 Bots</a></li>
             <li><a href="{% url 'backtesting:run_list' %}" class="{% if request.resolver_match.app_name == 'backtesting' %}active{% endif %}">📈 Backtesting</a></li>
+            <li><a href="{% url 'optimizer:list' %}" class="{% if request.resolver_match.app_name == 'optimizer' %}active{% endif %}">🔮 Optimizador</a></li>
             <li><a href="{% url 'paper_trading:paper_list' %}" class="{% if request.resolver_match.app_name == 'paper_trading' %}active{% endif %}">🎮 Paper Trading</a></li>
             <li><a href="{% url 'dashboard:settings' %}" class="{% if request.path == '/settings/' %}active{% endif %}">⚙️ Configuración</a></li>
             <li><a href="{% url 'admin:index' %}">🛡️ Admin</a></li>

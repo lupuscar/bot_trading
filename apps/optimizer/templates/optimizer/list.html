@@ -1,0 +1,60 @@
+{% extends 'dashboard/base.html' %}
+
+{% block title %}Optimizador | BotTrading{% endblock %}
+{% block page_title %}Optimizador de Estrategias (El Oráculo){% endblock %}
+
+{% block content %}
+<div class="glass-panel">
+    <div class="panel-header">
+        <h2 class="panel-title">🔮 Historial de Optimizaciones</h2>
+        <a href="{% url 'optimizer:create' %}" class="btn btn-primary">Nuevo Optimizador</a>
+    </div>
+
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Fecha</th>
+                    <th>Símbolo</th>
+                    <th>Período Evaluado</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for run in runs %}
+                <tr>
+                    <td>{{ run.created_at|date:"Y-m-d H:i" }}</td>
+                    <td class="font-mono">{{ run.symbol }}</td>
+                    <td>{{ run.start_date|date:"Y-m-d" }} a {{ run.end_date|date:"Y-m-d" }}</td>
+                    <td>
+                        {% if run.status == 'completed' %}
+                            <span class="badge success">COMPLETADO</span>
+                        {% elif run.status == 'failed' %}
+                            <span class="badge danger">FALLIDO</span>
+                        {% elif run.status == 'running' %}
+                            <span class="badge warning">PROCESANDO...</span>
+                        {% else %}
+                            <span class="badge">PENDIENTE</span>
+                        {% endif %}
+                    </td>
+                    <td style="display: flex; gap: 0.5rem; justify-content: center;">
+                        <a href="{% url 'optimizer:detail' run.id %}" class="btn btn-sm btn-secondary">Ver Resultados</a>
+                        <form method="POST" action="{% url 'optimizer:delete' run.id %}" onsubmit="return confirm('¿Eliminar?');" style="margin: 0;">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-sm btn-danger">🗑️</button>
+                        </form>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" style="text-align: center; padding: 2rem 0;" class="text-muted">
+                        No has ejecutado ninguna optimización todavía. ¡Pregúntale al Oráculo!
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

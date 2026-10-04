@@ -57,6 +57,7 @@ LOCAL_APPS = [
     'apps.paper_trading.apps.PaperTradingConfig',
     'apps.live_trading.apps.LiveTradingConfig',
     'apps.dashboard.apps.DashboardConfig',
+    'apps.optimizer.apps.OptimizerConfig',
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS

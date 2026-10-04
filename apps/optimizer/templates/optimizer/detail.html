@@ -1,0 +1,96 @@
+{% extends 'dashboard/base.html' %}
+
+{% block title %}Resultados del Optimizador | BotTrading{% endblock %}
+{% block page_title %}Resultados del Oráculo{% endblock %}
+
+{% block content %}
+<div style="display: grid; grid-template-columns: 1fr; gap: 2rem;">
+    
+    <!-- Resumen -->
+    <div class="glass-panel">
+        <div class="panel-header">
+            <h2 class="panel-title">Resumen de la Simulación</h2>
+            {% if run.status == 'running' %}
+                <span class="badge warning">Procesando... Recarga la página en unos minutos.</span>
+            {% elif run.status == 'completed' %}
+                <span class="badge success">Completado</span>
+            {% endif %}
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-top: 1rem;">
+            <div class="stat-card">
+                <div class="stat-label">Símbolo</div>
+                <div class="stat-value font-mono">{{ run.symbol }}</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Rango</div>
+                <div style="font-size: 0.9rem; margin-top: 0.5rem;">
+                    <div>{{ run.start_date|date:"d M Y" }}</div>
+                    <div>{{ run.end_date|date:"d M Y" }}</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Estrategias Probadas</div>
+                <div class="stat-value">{{ results.count }}</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Podio -->
+    {% if run.status == 'completed' %}
+    <div class="glass-panel">
+        <div class="panel-header">
+            <h2 class="panel-title">🏆 Top 3 Recomendaciones</h2>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-top: 1rem;">
+            {% for top in top_results %}
+            <div class="stat-card" style="border: 2px solid {% if forloop.counter == 1 %}#fbbf24{% elif forloop.counter == 2 %}#9ca3af{% else %}#b45309{% endif %}; position: relative;">
+                <div style="position: absolute; top: -15px; left: 50%; transform: translateX(-50%); font-size: 1.5rem;">
+                    {% if forloop.counter == 1 %}👑{% elif forloop.counter == 2 %}🥈{% else %}🥉{% endif %}
+                </div>
+                <div class="stat-label">{{ top.strategy_name }}</div>
+                <div class="font-mono text-muted" style="margin-bottom: 0.5rem;">Temporalidad: {{ top.timeframe }}</div>
+                <div class="stat-value {% if top.total_return_pct >= 0 %}text-success{% else %}text-danger{% endif %}">
+                    {{ top.total_return_pct|floatformat:2 }}%
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    
+    <!-- Tabla completa -->
+    <div class="glass-panel">
+        <div class="panel-header">
+            <h2 class="panel-title">Resultados Detallados</h2>
+        </div>
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Ranking</th>
+                        <th>Estrategia</th>
+                        <th>Temporalidad</th>
+                        <th>Retorno</th>
+                        <th>Drawdown</th>
+                        <th>Operaciones (G/P)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for res in results %}
+                    <tr>
+                        <td>#{{ forloop.counter }}</td>
+                        <td>{{ res.strategy_name }}</td>
+                        <td class="font-mono">{{ res.timeframe }}</td>
+                        <td class="font-mono {% if res.total_return_pct >= 0 %}text-success{% else %}text-danger{% endif %}">
+                            {{ res.total_return_pct|floatformat:2 }}%
+                        </td>
+                        <td class="font-mono text-danger">{{ res.max_drawdown_pct|floatformat:2 }}%</td>
+                        <td>{{ res.total_trades }} ({{ res.winning_trades }}/{{ res.losing_trades }})</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

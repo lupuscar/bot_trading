@@ -18,9 +18,9 @@ app.autodiscover_tasks()
 
 # Celery Beat Schedule
 app.conf.beat_schedule = {
-    'run-trading-bots-every-5-minutes': {
+    'run-trading-bots-every-minute': {
         'task': 'apps.live_trading.tasks.process_trading_bots',
-        'schedule': 300.0,  # 300 segundos = 5 minutos
+        'schedule': 60.0,  # 60 segundos = 1 minuto
     },
 }
 

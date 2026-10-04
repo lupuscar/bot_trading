@@ -42,40 +42,30 @@ class RandomTesterStrategy(BaseStrategy):
         return 1
 
     def analyze(self, data: pd.DataFrame) -> Signal:
-        buy_prob = int(self.params.get('buy_probability', 40))
-        sell_prob = int(self.params.get('sell_probability', 40))
-
         current = data.iloc[-1]
         close_price = Decimal(str(current['close']))
         timestamp = current['timestamp']
         symbol = data['symbol'].iloc[-1] if 'symbol' in data.columns else 'UNKNOWN'
 
-        # Tirar los dados (1 a 100)
-        roll = random.randint(1, 100)
+        # Usamos el minuto actual para alternar (par = compra, impar = venta)
+        # Asegurándonos de que alterne de forma exacta cada minuto.
+        current_minute = timestamp.minute
 
-        if roll <= buy_prob:
+        if current_minute % 2 == 0:
             return Signal(
                 signal_type='buy',
                 symbol=symbol,
                 strength=1.0,
                 price=close_price,
-                reason=f'Aleatorio: Ha salido {roll} (Prob. Compra: {buy_prob}%)',
+                reason=f'Minuto Par ({current_minute}): Comprando',
                 timestamp=timestamp
             )
-        elif roll <= (buy_prob + sell_prob):
+        else:
             return Signal(
                 signal_type='sell',
                 symbol=symbol,
                 strength=1.0,
                 price=close_price,
-                reason=f'Aleatorio: Ha salido {roll} (Prob. Venta: {sell_prob}%)',
+                reason=f'Minuto Impar ({current_minute}): Vendiendo',
                 timestamp=timestamp
             )
-        
-        return Signal(
-            signal_type='hold',
-            symbol=symbol,
-            price=close_price,
-            reason=f'Aleatorio: Ha salido {roll} (HOLD)',
-            timestamp=timestamp
-        )

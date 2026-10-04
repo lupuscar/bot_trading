@@ -151,6 +151,7 @@ def _execute_paper_trade(bot: TradingBot, signal, last_candle):
                 strategy=bot.strategy,
                 symbol=bot.symbol,
                 side='buy',
+                order_type='market',
                 amount=trade_amount,
                 entry_price=current_price,
                 status='open'

@@ -277,10 +277,13 @@ class AIAgentStrategy(BaseStrategy):
         decision = self._call_ai_api(prompt, provider, api_key, model_name)
         
         action = decision.get('action', 'hold').lower()
-        confidence = float(decision.get('confidence', 0))
+        
+        try:
+            confidence = float(decision.get('confidence', 0) or 0)
+        except (ValueError, TypeError):
+            confidence = 0.0
+            
         reason = decision.get('reason', 'Sin justificación')
-
-        logger.info(f"IA Decision: {action.upper()} | Confianza: {confidence}% | Razón: {reason}")
 
         # 5. Aplicar Filtro de Confianza
         if action != 'hold' and confidence >= threshold:

@@ -22,12 +22,19 @@ fi
 echo "📥 Descargando los últimos cambios de GitHub..."
 git pull origin main
 
-# 3. Construir y levantar contenedores en segundo plano
-echo "🐳 Reconstruyendo imágenes y levantando contenedores con Docker..."
-docker compose -f docker-compose.yml -f docker-compose.prod.yml down
-docker compose -f docker-compose.yml -f docker-compose.prod.yml up --build -d
+# 3. Limpiar cachés de Python locales (evita fantasmas en Docker)
+echo "🧹 Limpiando archivos de caché (.pyc y __pycache__)..."
+find . -type d -name "__pycache__" -exec rm -r {} + 2>/dev/null || true
+find . -type f -name "*.pyc" -delete 2>/dev/null || true
 
-# 4. Recolectar archivos estáticos para Nginx
+# 4. Construir y levantar contenedores
+# Usamos --build para que recompile las imágenes con el código nuevo.
+# No hacemos 'down' primero para evitar apagar la Base de Datos y causar caídas innecesarias.
+echo "🐳 Reconstruyendo imágenes y levantando contenedores con Docker..."
+docker compose -f docker-compose.yml -f docker-compose.prod.yml build
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+
+# 5. Recolectar archivos estáticos para Nginx
 echo "📂 Recolectando archivos estáticos de Django..."
 docker compose exec -T web python manage.py collectstatic --noinput --settings=config.settings.prod
 

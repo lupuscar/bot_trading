@@ -67,6 +67,10 @@ services:
         condition: service_healthy
     environment:
       DJANGO_SETTINGS_MODULE: config.settings.prod
+      DB_HOST: bottradring_db
+      REDIS_URL: redis://bottradring_redis:6379/0
+      CELERY_BROKER_URL: redis://bottradring_redis:6379/1
+      CELERY_RESULT_BACKEND: redis://bottradring_redis:6379/2
 
   # ------------------------------------------
   # Celery Worker (ejecuta tareas asíncronas)
@@ -88,6 +92,10 @@ services:
         condition: service_healthy
     environment:
       DJANGO_SETTINGS_MODULE: config.settings.prod
+      DB_HOST: bottradring_db
+      REDIS_URL: redis://bottradring_redis:6379/0
+      CELERY_BROKER_URL: redis://bottradring_redis:6379/1
+      CELERY_RESULT_BACKEND: redis://bottradring_redis:6379/2
 
   # ------------------------------------------
   # Celery Beat (scheduler periódico)
@@ -96,7 +104,7 @@ services:
     build: .
     container_name: bottradring_celery_beat
     restart: unless-stopped
-    command: celery -A config.celery beat --loglevel=info
+    command: celery -A config.celery beat --loglevel=info --schedule=/tmp/celerybeat-schedule --pidfile=/tmp/celerybeat.pid
     volumes:
       - ./logs:/app/logs
     env_file:
@@ -108,6 +116,10 @@ services:
         condition: service_healthy
     environment:
       DJANGO_SETTINGS_MODULE: config.settings.prod
+      DB_HOST: bottradring_db
+      REDIS_URL: redis://bottradring_redis:6379/0
+      CELERY_BROKER_URL: redis://bottradring_redis:6379/1
+      CELERY_RESULT_BACKEND: redis://bottradring_redis:6379/2
 
   # ------------------------------------------
   # Nginx (reverse proxy, en producción)

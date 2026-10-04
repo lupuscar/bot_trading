@@ -29,6 +29,14 @@ def run_delete(request, pk):
 
 
 @login_required
+def run_delete_all(request):
+    if request.method == 'POST':
+        count, _ = BacktestRun.objects.filter(user=request.user).delete()
+        messages.success(request, f'Se han eliminado {count} backtests correctamente.')
+    return redirect('backtesting:run_list')
+
+
+@login_required
 def run_create(request):
     if request.method == 'POST':
         strategy_id = request.POST.get('strategy_id')

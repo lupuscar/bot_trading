@@ -7,7 +7,15 @@
 <div class="glass-panel">
     <div class="panel-header">
         <h2 class="panel-title">📊 Historial de Backtests</h2>
-        <a href="{% url 'backtesting:run_create' %}" class="btn btn-primary">Nuevo Backtest</a>
+        <div style="display: flex; gap: 0.5rem;">
+            {% if runs %}
+            <form method="POST" action="{% url 'backtesting:run_delete_all' %}" onsubmit="return confirm('¿Seguro que quieres eliminar TODOS los resultados de backtesting? Esta acción no se puede deshacer.');" style="margin: 0;">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-danger">Borrar Todos</button>
+            </form>
+            {% endif %}
+            <a href="{% url 'backtesting:run_create' %}" class="btn btn-primary">Nuevo Backtest</a>
+        </div>
     </div>
 
     <div class="table-container">

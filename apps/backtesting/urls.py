@@ -8,4 +8,5 @@ urlpatterns = [
     path('new/', views.run_create, name='run_create'),
     path('<int:pk>/', views.run_detail, name='run_detail'),
     path('<int:pk>/delete/', views.run_delete, name='run_delete'),
+    path('delete-all/', views.run_delete_all, name='run_delete_all'),
 ]

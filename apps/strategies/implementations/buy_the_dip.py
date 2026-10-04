@@ -17,7 +17,7 @@ class BuyTheDipStrategy(BaseStrategy):
             'ema_period': {
                 'type': 'number',
                 'default': 200,
-                'description': 'Periodo de la EMA macro (Ej: 200 para tendencia a largo plazo)'
+                'description': 'Periodo de la EMA macro (Ej: 200)'
             },
             'rsi_period': {
                 'type': 'number',
@@ -27,12 +27,17 @@ class BuyTheDipStrategy(BaseStrategy):
             'rsi_buy_level': {
                 'type': 'number',
                 'default': 30,
-                'description': 'Nivel de sobreventa del RSI para COMPRAR (pánico)'
+                'description': 'RSI de compra (sobreventa)'
             },
-            'rsi_sell_level': {
+            'take_profit_pct': {
                 'type': 'number',
-                'default': 65,
-                'description': 'Nivel de sobrecompra del RSI para VENDER (rebote)'
+                'default': 5.0,
+                'description': 'Take Profit (%) - Objetivo de ganancias'
+            },
+            'stop_loss_pct': {
+                'type': 'number',
+                'default': 3.0,
+                'description': 'Stop Loss (%) - Máxima pérdida permitida'
             }
         }
 
@@ -41,8 +46,12 @@ class BuyTheDipStrategy(BaseStrategy):
             'ema_period': 200,
             'rsi_period': 14,
             'rsi_buy_level': 30,
-            'rsi_sell_level': 65
+            'take_profit_pct': 5.0,
+            'stop_loss_pct': 3.0
         }
+
+    def set_portfolio_state(self, state: Dict[str, Any]):
+        self.portfolio = state
 
     def get_min_data_points(self) -> int:
         return max(
@@ -62,11 +71,17 @@ class BuyTheDipStrategy(BaseStrategy):
         ema_period = int(self.params.get('ema_period', 200))
         rsi_period = int(self.params.get('rsi_period', 14))
         rsi_buy = float(self.params.get('rsi_buy_level', 30.0))
-        rsi_sell = float(self.params.get('rsi_sell_level', 65.0))
+        tp_pct = float(self.params.get('take_profit_pct', 5.0)) / 100.0
+        sl_pct = float(self.params.get('stop_loss_pct', 3.0)) / 100.0
 
         close_prices = df['close']
         current_price = close_prices.iloc[-1]
         timestamp = df.iloc[-1]['timestamp']
+        
+        # Estado del portfolio
+        portfolio = getattr(self, 'portfolio', {})
+        position = float(portfolio.get('position', 0))
+        avg_price = float(portfolio.get('position_avg_price', 0))
 
         # 1. Calcular EMA Macro
         df['EMA_Macro'] = close_prices.ewm(span=ema_period, adjust=False).mean()
@@ -83,31 +98,45 @@ class BuyTheDipStrategy(BaseStrategy):
         df['RSI'] = 100 - (100 / (1 + rs))
         current_rsi = df['RSI'].iloc[-1]
 
-        # 3. Lógica de Decisión
-        if is_bull_market and current_rsi <= rsi_buy:
+        # 3. Lógica de Salida (Take Profit / Stop Loss)
+        if position > 0 and avg_price > 0:
+            profit_pct = (current_price - avg_price) / avg_price
+            
+            if profit_pct >= tp_pct:
+                return Signal(
+                    signal_type='sell',
+                    symbol='',
+                    timestamp=timestamp,
+                    price=current_price,
+                    reason=f"Take Profit alcanzado. Ganancia: {profit_pct*100:.2f}% (Comprado a {avg_price:.2f})"
+                )
+            elif profit_pct <= -sl_pct:
+                return Signal(
+                    signal_type='sell',
+                    symbol='',
+                    timestamp=timestamp,
+                    price=current_price,
+                    reason=f"Stop Loss activado. Pérdida: {profit_pct*100:.2f}% (Comprado a {avg_price:.2f})"
+                )
+
+        # 4. Lógica de Entrada
+        if position == 0 and is_bull_market and current_rsi <= rsi_buy:
             return Signal(
                 signal_type='buy',
                 symbol='',
                 timestamp=timestamp,
                 price=current_price,
-                reason=f"Pánico en tendencia alcista. Precio (${current_price:.2f}) > EMA{ema_period} y RSI en sobreventa ({current_rsi:.2f} <= {rsi_buy})."
-            )
-        elif current_rsi >= rsi_sell:
-            return Signal(
-                signal_type='sell',
-                symbol='',
-                timestamp=timestamp,
-                price=current_price,
-                reason=f"Rebote conseguido / Sobrecompra. RSI superó límite superior ({current_rsi:.2f} >= {rsi_sell})."
+                reason=f"Pánico alcista (Precio > EMA{ema_period}, RSI = {current_rsi:.2f})"
             )
         
         estado_tendencia = "Alcista" if is_bull_market else "Bajista"
+        estado_pos = f"Hold (Entrada: {avg_price:.2f})" if position > 0 else "Buscando entrada"
         return Signal(
             signal_type='hold',
             symbol='',
             timestamp=timestamp,
             price=current_price,
-            reason=f"Esperando setup. Tendencia: {estado_tendencia}, RSI actual: {current_rsi:.2f}."
+            reason=f"{estado_pos}. Tendencia: {estado_tendencia}, RSI: {current_rsi:.2f}."
         )
 
     def get_chart_indicators(self, df: pd.DataFrame) -> Dict[str, Any]:

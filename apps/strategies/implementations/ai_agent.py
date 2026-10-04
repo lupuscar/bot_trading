@@ -268,7 +268,11 @@ class AIAgentStrategy(BaseStrategy):
             api_key = setting.value if setting else ''
 
         model_name = self.params.get('model', 'gpt-3.5-turbo')
-        threshold = float(self.params.get('confidence_threshold', 75.0))
+        try:
+            raw_threshold = self.params.get('confidence_threshold', 75.0)
+            threshold = float(raw_threshold if raw_threshold != "" else 75.0)
+        except (ValueError, TypeError):
+            threshold = 75.0
 
         # En backtesting con muchas velas, llamar a la API por cada vela sería costosísimo y lento.
         # PROTECCIÓN DE COSTES: Si estamos en backtesting masivo (detectado si current_time es antiguo), podríamos bypassear.

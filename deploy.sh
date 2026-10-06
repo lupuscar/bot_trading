@@ -33,8 +33,9 @@ echo "🐳 Reconstruyendo imágenes y levantando contenedores con Docker (Sin Ca
 docker compose -f docker-compose.yml -f docker-compose.prod.yml build --no-cache
 docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 
-# 5. Recolectar archivos estáticos para Nginx
-echo "📂 Recolectando archivos estáticos de Django..."
+# 5. Recolectar archivos estáticos y migrar Base de Datos
+echo "📂 Recolectando archivos estáticos y aplicando migraciones..."
+docker compose exec -T web python manage.py migrate --noinput --settings=config.settings.prod
 docker compose exec -T web python manage.py collectstatic --noinput --settings=config.settings.prod
 
 # 5. Crear usuario administrador por defecto si no existe

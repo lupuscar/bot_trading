@@ -35,6 +35,16 @@ class BollingerReboundStrategy(BaseStrategy):
             }
         }
 
+    @classmethod
+    def get_optimization_parameters(cls) -> Dict[str, list]:
+        """Devuelve los rangos de parámetros para el Optimizador."""
+        return {
+            'bb_period': [15, 20, 30],
+            'bb_std': [1.5, 2.0, 2.5],
+            'take_profit_pct': [2.0, 5.0, 10.0],
+            'stop_loss_pct': [2.0, 4.0, 8.0]
+        }
+
     def get_default_params(self) -> dict:
         return {
             'bb_period': 20,

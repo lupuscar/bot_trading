@@ -41,6 +41,17 @@ class BuyTheDipStrategy(BaseStrategy):
             }
         }
 
+    @classmethod
+    def get_optimization_parameters(cls) -> Dict[str, list]:
+        """Devuelve los rangos de parámetros para el Optimizador."""
+        return {
+            'ema_period': [100, 200],
+            'rsi_period': [14, 21],
+            'rsi_buy_level': [25, 30, 35],
+            'take_profit_pct': [2.0, 5.0, 10.0],
+            'stop_loss_pct': [2.0, 5.0, 10.0]
+        }
+
     def get_default_params(self) -> dict:
         return {
             'ema_period': 200,

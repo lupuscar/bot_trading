@@ -1,0 +1,119 @@
+# ============================================
+# Docker Compose - Desarrollo Local
+# ============================================
+# Uso: docker compose -f docker-compose.dev.yml up -d
+
+services:
+  # ------------------------------------------
+  # PostgreSQL + TimescaleDB
+  # ------------------------------------------
+  db:
+    image: timescale/timescaledb:latest-pg16
+    container_name: bottradring_db_dev
+    restart: unless-stopped
+    volumes:
+      - postgres_data_dev:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: bottradring
+      POSTGRES_USER: bottradring
+      POSTGRES_PASSWORD: bottradring_dev_password
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bottradring"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ------------------------------------------
+  # Redis (Celery broker + cache)
+  # ------------------------------------------
+  redis:
+    image: redis:7-alpine
+    container_name: bottradring_redis_dev
+    restart: unless-stopped
+    volumes:
+      - redis_data_dev:/data
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ------------------------------------------
+  # Django (aplicación web en modo DEV)
+  # ------------------------------------------
+  web:
+    build: .
+    container_name: bottradring_web_dev
+    restart: unless-stopped
+    command: python manage.py runserver 0.0.0.0:8000
+    volumes:
+      - .:/app  # <-- HOT RELOAD: Monta el código local
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      DJANGO_SETTINGS_MODULE: config.settings.dev
+      DB_HOST: bottradring_db_dev
+      DB_PASSWORD: bottradring_dev_password
+      REDIS_URL: redis://bottradring_redis_dev:6379/0
+      CELERY_BROKER_URL: redis://bottradring_redis_dev:6379/1
+      CELERY_RESULT_BACKEND: redis://bottradring_redis_dev:6379/2
+      DEBUG: "True"
+
+  # ------------------------------------------
+  # Celery Worker (Tareas asíncronas)
+  # ------------------------------------------
+  celery_worker:
+    build: .
+    container_name: bottradring_celery_worker_dev
+    restart: unless-stopped
+    command: sh -c "pip install watchdog && watchmedo auto-restart --directory=./ --pattern=*.py --recursive -- celery -A config.celery worker --loglevel=info --concurrency=2"
+    volumes:
+      - .:/app  # <-- HOT RELOAD para las tareas
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      DJANGO_SETTINGS_MODULE: config.settings.dev
+      DB_HOST: bottradring_db_dev
+      DB_PASSWORD: bottradring_dev_password
+      REDIS_URL: redis://bottradring_redis_dev:6379/0
+      CELERY_BROKER_URL: redis://bottradring_redis_dev:6379/1
+      CELERY_RESULT_BACKEND: redis://bottradring_redis_dev:6379/2
+
+  # ------------------------------------------
+  # Celery Beat (Scheduler)
+  # ------------------------------------------
+  celery_beat:
+    build: .
+    container_name: bottradring_celery_beat_dev
+    restart: unless-stopped
+    command: sh -c "pip install watchdog && watchmedo auto-restart --directory=./ --pattern=*.py --recursive -- celery -A config.celery beat --loglevel=info"
+    volumes:
+      - .:/app
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      DJANGO_SETTINGS_MODULE: config.settings.dev
+      DB_HOST: bottradring_db_dev
+      DB_PASSWORD: bottradring_dev_password
+      REDIS_URL: redis://bottradring_redis_dev:6379/0
+      CELERY_BROKER_URL: redis://bottradring_redis_dev:6379/1
+      CELERY_RESULT_BACKEND: redis://bottradring_redis_dev:6379/2
+
+volumes:
+  postgres_data_dev:
+  redis_data_dev:

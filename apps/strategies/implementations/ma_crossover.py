@@ -37,6 +37,14 @@ class MACrossoverStrategy(BaseStrategy):
             },
         }
 
+    @classmethod
+    def get_optimization_parameters(cls) -> dict[str, list]:
+        """Devuelve los rangos de parámetros para el Optimizador."""
+        return {
+            'fast_period': [5, 10, 20],
+            'slow_period': [20, 50, 100]
+        }
+
     def get_min_data_points(self) -> int:
         return self.params.get('slow_period', 20) + 1
 

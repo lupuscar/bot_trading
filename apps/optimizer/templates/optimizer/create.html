@@ -13,6 +13,21 @@
         {% csrf_token %}
         
         <div class="form-group">
+            <label class="form-label">Estrategias a Optimizar</label>
+            <div style="background: rgba(255,255,255,0.05); padding: 1rem; border-radius: 8px; border: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 0.5rem;">
+                {% for path, name in strategies %}
+                <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; margin: 0;">
+                    <input type="checkbox" name="strategies" value="{{ path }}" style="width: 16px; height: 16px;">
+                    <span>{{ name }}</span>
+                </label>
+                {% empty %}
+                <span class="text-muted">No hay estrategias disponibles.</span>
+                {% endfor %}
+            </div>
+            <small class="text-muted">Selecciona cuáles estrategias quieres incluir en la optimización.</small>
+        </div>
+        
+        <div class="form-group">
             <label class="form-label" for="symbol">Símbolo (Par)</label>
             <input type="text" id="symbol" name="symbol" class="form-input" value="BTC/USDT" required>
             <small class="text-muted">Ej: BTC/USDT, ETH/USDT</small>
@@ -26,6 +41,12 @@
         <div class="form-group">
             <label class="form-label" for="end_date">Fecha de Fin</label>
             <input type="datetime-local" id="end_date" name="end_date" class="form-input" required>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label" for="trade_risk_pct">Riesgo por Operación (%)</label>
+            <input type="number" step="0.1" id="trade_risk_pct" name="trade_risk_pct" class="form-input" value="5.0" required>
+            <small class="text-muted">Porcentaje del capital que se usará en cada compra (ej. 5.0 = 5%)</small>
         </div>
 
         <div class="form-actions" style="margin-top: 2rem;">

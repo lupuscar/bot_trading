@@ -18,11 +18,14 @@ class BacktestEngine:
     Simula la ejecución de una estrategia a través de datos históricos.
     """
 
-    def __init__(self, run_id: int):
+    def __init__(self, run_id_or_obj):
         """
-        Inicializa el motor usando un ID de ejecución de BacktestRun
+        Inicializa el motor usando un ID de ejecución de BacktestRun o un objeto simulado.
         """
-        self.run_obj = BacktestRun.objects.get(id=run_id)
+        if isinstance(run_id_or_obj, (int, str)):
+            self.run_obj = BacktestRun.objects.get(id=int(run_id_or_obj))
+        else:
+            self.run_obj = run_id_or_obj
         self.strategy_cls = None
         self.strategy_instance = None
         self.df = None
@@ -176,7 +179,7 @@ class BacktestEngine:
 
         # Iterar simulando el paso del tiempo
         for i in range(min_rows, len(self.df)):
-            current_slice = self.df.iloc[:i+1].copy()
+            current_slice = self.df.iloc[:i+1]
             current_row = current_slice.iloc[-1]
             current_price = Decimal(str(current_row['close']))
             current_time = current_row['timestamp']
@@ -202,7 +205,9 @@ class BacktestEngine:
         last_price = Decimal(str(self.df.iloc[-1]['close']))
         last_time = self.df.iloc[-1]['timestamp']
         if self.position > 0:
-            self._execute_trade('sell', last_price, self.position, last_time, 'Cierre de fin de backtest')
+            self._execute_trade('sell', last_price, self.position, last_time, 'Cierre de fin de backtest (Largo)')
+        elif self.position < 0:
+            self._execute_trade('cover', last_price, abs(self.position), last_time, 'Cierre de fin de backtest (Corto)')
 
         self._calculate_results()
 
@@ -235,8 +240,29 @@ class BacktestEngine:
             value = amount_to_sell * current_price
             commission = value * self.commission_rate
             
-            # Vender
             self._execute_trade('sell', current_price, amount_to_sell, current_time, signal.reason, commission)
+            
+        elif signal.signal_type == 'short' and self.cash > 0:
+            if self.position != 0 and not self.run_obj.allow_pyramiding:
+                return
+                
+            risk_multiplier = Decimal(str(self.run_obj.trade_risk_pct)) / Decimal('100.0')
+            cash_to_risk = self.cash * risk_multiplier
+            
+            usable_cash = cash_to_risk / (Decimal('1') + self.commission_rate)
+            amount_to_short = usable_cash / current_price
+            
+            value = amount_to_short * current_price
+            commission = value * self.commission_rate
+            
+            self._execute_trade('short', current_price, amount_to_short, current_time, signal.reason, commission)
+            
+        elif signal.signal_type == 'cover' and self.position < 0:
+            amount_to_cover = abs(self.position)
+            cost = amount_to_cover * current_price
+            commission = cost * self.commission_rate
+            
+            self._execute_trade('cover', current_price, amount_to_cover, current_time, signal.reason, commission)
 
     def _execute_trade(self, side: str, price: Decimal, amount: Decimal, timestamp, reason: str, commission: Decimal = Decimal('0')):
         if side == 'buy':
@@ -254,6 +280,44 @@ class BacktestEngine:
                     'timestamp': timestamp.isoformat(),
                     'reason': reason
                 })
+        elif side == 'short':
+            revenue = (amount * price) - commission
+            self.cash += revenue
+            self.position -= amount
+            self.position_avg_price = price
+            
+            self.trades.append({
+                'side': 'short',
+                'price': float(price),
+                'amount': float(amount),
+                'commission': float(commission),
+                'timestamp': timestamp.isoformat(),
+                'reason': reason
+            })
+        elif side == 'cover':
+            cost = (amount * price) + commission
+            # En un short, profit = precio_entrada - precio_salida
+            # revenue inicial = amount * avg_price
+            revenue_initial = amount * self.position_avg_price
+            pnl = revenue_initial - cost
+            pnl_pct = (pnl / revenue_initial) * 100 if revenue_initial > 0 else 0
+            
+            self.cash -= cost
+            self.position += amount
+            
+            if self.position == 0:
+                self.position_avg_price = Decimal('0')
+                
+            self.trades.append({
+                'side': 'cover',
+                'price': float(price),
+                'amount': float(amount),
+                'commission': float(commission),
+                'timestamp': timestamp.isoformat(),
+                'reason': reason,
+                'pnl': float(pnl),
+                'pnl_pct': float(pnl_pct)
+            })
         elif side == 'sell':
             revenue = (amount * price) - commission
             if self.position >= amount:
@@ -285,10 +349,10 @@ class BacktestEngine:
             final_capital = self.cash
             total_return_pct = ((final_capital - self.initial_capital) / self.initial_capital) * 100
             
-            # Extraer trades de venta (que tienen el PnL cerrado)
-            sell_trades = [t for t in self.trades if t['side'] == 'sell']
-            total_trades = len(sell_trades)
-            winning_trades = sum(1 for t in sell_trades if t.get('pnl', 0) > 0)
+            # Extraer trades cerrados (sell para long, cover para short)
+            closed_trades = [t for t in self.trades if t['side'] in ('sell', 'cover')]
+            total_trades = len(closed_trades)
+            winning_trades = sum(1 for t in closed_trades if t.get('pnl', 0) > 0)
             losing_trades = total_trades - winning_trades
             
             # Calcular Drawdown

@@ -33,7 +33,13 @@
                         {% elif run.status == 'failed' %}
                             <span class="badge danger">FALLIDO</span>
                         {% elif run.status == 'running' %}
-                            <span class="badge warning">PROCESANDO...</span>
+                            <div style="display: flex; align-items: center; gap: 0.5rem; justify-content: center;">
+                                <span class="badge warning" style="margin-bottom: 0;">PROCESANDO...</span>
+                                <div style="background: rgba(255,255,255,0.1); border-radius: 4px; width: 60px; height: 8px; overflow: hidden; display: inline-block;">
+                                    <div style="background: #fbbf24; height: 100%; width: {{ run.progress }}%;"></div>
+                                </div>
+                                <span style="font-size: 0.8rem; color: #fbbf24;">{{ run.progress }}%</span>
+                            </div>
                         {% else %}
                             <span class="badge">PENDIENTE</span>
                         {% endif %}

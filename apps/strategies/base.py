@@ -41,7 +41,7 @@ class Signal:
     @property
     def is_actionable(self) -> bool:
         """Si la señal requiere acción (no es HOLD)."""
-        return self.signal_type in ('buy', 'sell', 'close')
+        return self.signal_type in ('buy', 'sell', 'close', 'short', 'cover')
 
 
 class BaseStrategy(ABC):

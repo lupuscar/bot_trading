@@ -11,7 +11,7 @@
 
     <form method="POST" action="{% url 'backtesting:run_create' %}">
         {% csrf_token %}
-        
+
         <div class="form-group">
             <label>Estrategia</label>
             <select name="strategy_id" class="form-control" required>
@@ -26,7 +26,8 @@
         <div class="grid grid-cols-2" style="gap: 1rem;">
             <div class="form-group">
                 <label>Símbolo (Mercado)</label>
-                <input type="text" name="symbol" class="form-control" value="BTC/USDT" required placeholder="ej: BTC/USDT">
+                <input type="text" name="symbol" class="form-control" value="BTC/USDT" required
+                    placeholder="ej: BTC/USDT">
             </div>
 
             <div class="form-group">
@@ -42,7 +43,8 @@
         <div class="grid grid-cols-2" style="gap: 1rem;">
             <div class="form-group">
                 <label>Fecha de Inicio</label>
-                <input type="datetime-local" name="start_date" class="form-control" value="{{ default_start }}" required>
+                <input type="datetime-local" name="start_date" class="form-control" value="{{ default_start }}"
+                    required>
             </div>
 
             <div class="form-group">
@@ -60,18 +62,21 @@
 
             <div class="form-group">
                 <label>Riesgo por Operación (%)</label>
-                <input type="number" step="1" name="trade_risk_pct" class="form-control" value="100" min="1" max="100" required>
+                <input type="number" step="1" name="trade_risk_pct" class="form-control" value="10" min="1" max="100"
+                    required>
                 <small class="text-muted">Porcentaje del capital a invertir en cada compra.</small>
             </div>
         </div>
 
-        <div class="form-group" style="margin-top: 1rem; background: rgba(255,255,255,0.02); padding: 1rem; border-radius: 8px; border: 1px solid var(--border-color);">
+        <div class="form-group"
+            style="margin-top: 1rem; background: rgba(255,255,255,0.02); padding: 1rem; border-radius: 8px; border: 1px solid var(--border-color);">
             <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; margin: 0;">
                 <input type="checkbox" name="allow_pyramiding" style="width: 18px; height: 18px;">
                 <strong>Permitir compras múltiples (Pyramiding)</strong>
             </label>
             <p class="text-muted" style="margin: 0.5rem 0 0 1.7rem; font-size: 0.85rem;">
-                Si está activo, el bot podrá abrir nuevas operaciones de compra aunque ya haya posiciones abiertas. Si está desactivado, esperará a cerrar la actual antes de comprar de nuevo.
+                Si está activo, el bot podrá abrir nuevas operaciones de compra aunque ya haya posiciones abiertas. Si
+                está desactivado, esperará a cerrar la actual antes de comprar de nuevo.
             </p>
         </div>
 

@@ -28,3 +28,23 @@ def get_rsi(series: pd.Series, period: int = 14) -> pd.Series:
     ema_down = down.ewm(com=period - 1, adjust=False).mean()
     rs = ema_up / ema_down
     return 100 - (100 / (1 + rs))
+
+def get_atr(high: pd.Series, low: pd.Series, close: pd.Series, period: int = 14) -> pd.Series:
+    """Average True Range (ATR)"""
+    tr1 = high - low
+    tr2 = (high - close.shift()).abs()
+    tr3 = (low - close.shift()).abs()
+    tr = pd.concat([tr1, tr2, tr3], axis=1).max(axis=1)
+    return tr.rolling(window=period).mean()
+
+def get_keltner_channels(df: pd.DataFrame, period: int = 20, atr_multiplier: float = 1.5) -> pd.DataFrame:
+    """
+    Keltner Channels
+    Requiere un DataFrame con ['high', 'low', 'close']
+    Retorna un DataFrame con ['EMA', 'Upper', 'Lower']
+    """
+    ema = get_ema(df['close'], period)
+    atr = get_atr(df['high'], df['low'], df['close'], period)
+    upper = ema + (atr * atr_multiplier)
+    lower = ema - (atr * atr_multiplier)
+    return pd.DataFrame({'EMA': ema, 'Upper': upper, 'Lower': lower})

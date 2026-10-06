@@ -29,6 +29,7 @@ class BacktestEngine:
         self.strategy_cls = None
         self.strategy_instance = None
         self.df = None
+        self.extra_dfs = {}
         
         # Portfolio state
         self.initial_capital = self.run_obj.initial_capital
@@ -48,51 +49,55 @@ class BacktestEngine:
             params=self.run_obj.strategy_params
         )
 
-    def load_data(self):
-        """Cargar datos históricos de la BD en un DataFrame. Si faltan, los descarga."""
-        # 1. Calcular fecha de inicio extendida para "calentar" indicadores (warmup)
-        # Asumimos que 200 velas previas son suficientes para casi cualquier indicador estándar
+    def _get_warmup_start(self, timeframe: str):
+        """Calcula el fetch_start necesario para este timeframe (250 velas previas)"""
         tf_minutes = {'m': 1, 'h': 60, 'd': 1440, 'w': 10080}
-        unit = self.run_obj.timeframe[-1]
+        unit = timeframe[-1]
         try:
-            val = int(self.run_obj.timeframe[:-1])
+            val = int(timeframe[:-1])
             mins = val * tf_minutes.get(unit, 60)
         except:
             mins = 60
         warmup_delta = timezone.timedelta(minutes=mins * 250)
-        fetch_start = self.run_obj.start_date - warmup_delta
+        return self.run_obj.start_date - warmup_delta
 
-        # Comprobar si tenemos datos en la BD
+    def _ensure_data_in_db(self, timeframe: str):
+        """Asegura que los datos existan en la BD para el rango y timeframe dados."""
+        from apps.core.models import Candle
+        fetch_start = self._get_warmup_start(timeframe)
+
         candles = Candle.objects.filter(
             symbol=self.run_obj.symbol,
-            timeframe=self.run_obj.timeframe,
+            timeframe=timeframe,
             timestamp__gte=fetch_start,
             timestamp__lte=self.run_obj.end_date
         ).order_by('timestamp')
         
-        # Validación de cobertura (simplificada: miramos primer y último registro)
         needs_download = False
         if not candles.exists():
             needs_download = True
         else:
             first_candle = candles.first().timestamp
             last_candle = candles.last().timestamp
-            # Si el gap al inicio o al final es mayor a un margen razonable, descargamos
             if first_candle > fetch_start + timezone.timedelta(days=1) or \
                last_candle < self.run_obj.end_date - timezone.timedelta(days=1):
                 needs_download = True
 
         if needs_download:
-            logger.info(f"Descargando datos históricos faltantes para {self.run_obj.symbol} (incluyendo warmup)...")
-            self._download_historical_data(fetch_start)
-            # Volver a consultar
-            candles = Candle.objects.filter(
-                symbol=self.run_obj.symbol,
-                timeframe=self.run_obj.timeframe,
-                timestamp__gte=fetch_start,
-                timestamp__lte=self.run_obj.end_date
-            ).order_by('timestamp')
+            logger.info(f"Descargando histórico para {self.run_obj.symbol} ({timeframe})...")
+            self._download_historical_data(timeframe, fetch_start)
+            
+        return Candle.objects.filter(
+            symbol=self.run_obj.symbol,
+            timeframe=timeframe,
+            timestamp__gte=fetch_start,
+            timestamp__lte=self.run_obj.end_date
+        ).order_by('timestamp')
 
+    def load_data(self):
+        """Cargar datos históricos de la BD (principal y extras). Si faltan, los descarga."""
+        # 1. Cargar Timeframe Principal
+        candles = self._ensure_data_in_db(self.run_obj.timeframe)
         data = []
         for c in candles:
             data.append({
@@ -107,12 +112,35 @@ class BacktestEngine:
             
         self.df = pd.DataFrame(data)
         if self.df.empty:
-            raise ValueError("No se pudieron obtener datos para las fechas seleccionadas.")
+            raise ValueError("No se pudieron obtener datos para el timeframe principal.")
+
+        # 2. Cargar Timeframes Extra
+        self.extra_dfs = {}
+        if self.strategy_instance:
+            extra_tfs = getattr(self.strategy_instance, 'get_extra_timeframes', lambda: [])()
+            for tf in extra_tfs:
+                tf_candles = self._ensure_data_in_db(tf)
+                tf_data = []
+                for c in tf_candles:
+                    tf_data.append({
+                        'timestamp': c.timestamp,
+                        'open': float(c.open),
+                        'high': float(c.high),
+                        'low': float(c.low),
+                        'close': float(c.close),
+                        'volume': float(c.volume),
+                        'symbol': c.symbol
+                    })
+                df_extra = pd.DataFrame(tf_data)
+                if not df_extra.empty:
+                    # Índice por timestamp para búsqueda rápida O(log N)
+                    df_extra.set_index('timestamp', drop=False, inplace=True)
+                self.extra_dfs[tf] = df_extra
             
         self.run_obj.status = 'running'
         self.run_obj.save(update_fields=['status'])
 
-    def _download_historical_data(self, fetch_start):
+    def _download_historical_data(self, timeframe: str, fetch_start):
         """Descarga datos desde Binance usando el conector público y los guarda en BD"""
         from apps.connectors.crypto.binance import BinanceConnector
         from apps.core.models import Candle
@@ -123,29 +151,26 @@ class BacktestEngine:
             config={'testnet': False}
         )
         if not connector.connect():
-            logger.error("No se pudo conectar a Binance para descargar histórico.")
+            logger.error("No se pudo conectar a Binance.")
             return
 
         try:
-            # Pedimos todo el rango extendido
             df = connector.get_historical_data(
                 symbol=self.run_obj.symbol,
-                timeframe=self.run_obj.timeframe,
+                timeframe=timeframe,
                 start=fetch_start,
                 end=self.run_obj.end_date,
                 limit=2000
             )
-            
             if df.empty:
-                logger.warning(f"Binance devolvió 0 velas para {self.run_obj.symbol}")
+                logger.warning(f"Binance devolvió 0 velas ({timeframe})")
                 return
 
-            # Bulk create ignoring conflicts
             candles_to_create = []
             for _, row in df.iterrows():
                 candles_to_create.append(Candle(
                     symbol=self.run_obj.symbol,
-                    timeframe=self.run_obj.timeframe,
+                    timeframe=timeframe,
                     timestamp=timezone.make_aware(row['timestamp'].to_pydatetime()) if timezone.is_naive(row['timestamp'].to_pydatetime()) else row['timestamp'].to_pydatetime(),
                     open=Decimal(str(row['open'])),
                     high=Decimal(str(row['high'])),
@@ -154,10 +179,8 @@ class BacktestEngine:
                     volume=Decimal(str(row['volume']))
                 ))
             
-            # Usar ignore_conflicts para no fallar si ya existen algunas velas en el rango
             Candle.objects.bulk_create(candles_to_create, ignore_conflicts=True)
-            logger.info(f"Guardadas {len(candles_to_create)} velas en BD para {self.run_obj.symbol}.")
-            
+            logger.info(f"Guardadas {len(candles_to_create)} velas ({timeframe}) en BD.")
         except Exception as e:
             logger.error(f"Error descargando datos: {e}")
         finally:
@@ -187,8 +210,14 @@ class BacktestEngine:
             # Solo analizamos y operamos si estamos dentro de la ventana real de backtest
             # Las velas anteriores (warmup) solo sirven para que 'current_slice' tenga histórico
             if current_time >= self.run_obj.start_date:
+                # Slicing de extra timeframes (cortamos hasta el current_time)
+                # Al estar el index seteado a timestamp, .loc[:current_time] es muy rápido
+                sliced_extra_dfs = {}
+                for tf, df_ext in self.extra_dfs.items():
+                    sliced_extra_dfs[tf] = df_ext.loc[:current_time]
+                
                 # 1. Obtener Señal
-                signal = self.strategy_instance.safe_analyze(current_slice)
+                signal = self.strategy_instance.safe_analyze(current_slice, extra_data=sliced_extra_dfs)
                 
                 # 2. Ejecutar Señal
                 self._process_signal(signal, current_price, current_time)

@@ -69,7 +69,7 @@ class BaseStrategy(ABC):
     # ------------------------------------------
 
     @abstractmethod
-    def analyze(self, data: pd.DataFrame) -> Signal:
+    def analyze(self, data: pd.DataFrame, extra_data: dict[str, pd.DataFrame] = None) -> Signal:
         """
         Analizar datos de mercado y generar una señal de trading.
 
@@ -79,6 +79,9 @@ class BaseStrategy(ABC):
         Args:
             data: DataFrame con columnas [timestamp, open, high, low, close, volume]
                   Ordenado cronológicamente (más antiguo primero).
+            extra_data: Diccionario con DataFrames de temporalidades adicionales
+                        requeridas (ej: {'4h': df_4h}). También cortados hasta el
+                        minuto exacto de simulación para evitar lookahead bias.
 
         Returns:
             Objeto Signal con la decisión de la estrategia.
@@ -143,6 +146,14 @@ class BaseStrategy(ABC):
         """
         return '1h'  # Por defecto
 
+    def get_extra_timeframes(self) -> list[str]:
+        """
+        Devuelve una lista de temporalidades adicionales necesarias.
+        El motor se encargará de descargarlas y sincronizarlas temporalmente.
+        Ej: ['4h', '1d']
+        """
+        return []
+
     @classmethod
     def get_parameters_schema(cls) -> dict[str, dict[str, Any]]:
         """
@@ -183,7 +194,7 @@ class BaseStrategy(ABC):
     # Métodos de utilidad (NO sobreescribir)
     # ------------------------------------------
 
-    def safe_analyze(self, data: pd.DataFrame) -> Signal:
+    def safe_analyze(self, data: pd.DataFrame, extra_data: dict[str, pd.DataFrame] = None) -> Signal:
         """
         Wrapper seguro para analyze(). Valida datos y captura excepciones.
         Usar este método en vez de analyze() directamente.
@@ -195,7 +206,7 @@ class BaseStrategy(ABC):
                     symbol='',
                     reason='Datos inválidos o insuficientes',
                 )
-            return self.analyze(data)
+            return self.analyze(data, extra_data=extra_data)
         except Exception as e:
             self.logger.exception(f'Error en estrategia {self.name}: {e}')
             return Signal(

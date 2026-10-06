@@ -3,6 +3,7 @@ from typing import Any
 from decimal import Decimal
 
 from apps.strategies.base import BaseStrategy, Signal
+from apps.strategies.indicators import get_sma
 
 class MACrossoverStrategy(BaseStrategy):
     DISPLAY_NAME = 'Cruce de Medias Móviles (SMA)'
@@ -56,8 +57,8 @@ class MACrossoverStrategy(BaseStrategy):
         df = data.copy()
 
         # Calcular SMAs
-        df['sma_fast'] = df['close'].rolling(window=fast_period).mean()
-        df['sma_slow'] = df['close'].rolling(window=slow_period).mean()
+        df['sma_fast'] = get_sma(df['close'], fast_period)
+        df['sma_slow'] = get_sma(df['close'], slow_period)
 
         # Miramos los dos últimos períodos completados
         current = df.iloc[-1]

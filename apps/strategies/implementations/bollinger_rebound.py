@@ -1,6 +1,7 @@
 import pandas as pd
 from typing import Dict, Any
 from apps.strategies.base import BaseStrategy, Signal
+from apps.strategies.indicators import get_bollinger_bands
 
 class BollingerReboundStrategy(BaseStrategy):
     DISPLAY_NAME = 'Bollinger Rebound (Rango Lateral)'
@@ -84,10 +85,10 @@ class BollingerReboundStrategy(BaseStrategy):
         avg_price = float(portfolio.get('position_avg_price', 0))
 
         # 1. Calcular Bandas de Bollinger
-        df['SMA'] = close_prices.rolling(window=bb_period).mean()
-        df['STD'] = close_prices.rolling(window=bb_period).std()
-        df['Upper'] = df['SMA'] + (df['STD'] * bb_std)
-        df['Lower'] = df['SMA'] - (df['STD'] * bb_std)
+        bb_df = get_bollinger_bands(close_prices, bb_period, bb_std)
+        df['SMA'] = bb_df['SMA']
+        df['Upper'] = bb_df['Upper']
+        df['Lower'] = bb_df['Lower']
 
         curr_lower = df['Lower'].iloc[-1]
         prev_lower = df['Lower'].iloc[-2]

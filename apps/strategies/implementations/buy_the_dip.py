@@ -1,6 +1,7 @@
 import pandas as pd
 from typing import Dict, Any
 from apps.strategies.base import BaseStrategy, Signal
+from apps.strategies.indicators import get_ema, get_rsi
 
 class BuyTheDipStrategy(BaseStrategy):
     DISPLAY_NAME = 'Buy The Dip (Tendencia + Pánico)'
@@ -95,18 +96,12 @@ class BuyTheDipStrategy(BaseStrategy):
         avg_price = float(portfolio.get('position_avg_price', 0))
 
         # 1. Calcular EMA Macro
-        df['EMA_Macro'] = close_prices.ewm(span=ema_period, adjust=False).mean()
+        df['EMA_Macro'] = get_ema(close_prices, ema_period)
         current_ema = df['EMA_Macro'].iloc[-1]
         is_bull_market = current_price > current_ema
 
         # 2. Calcular RSI
-        delta = close_prices.diff()
-        up = delta.clip(lower=0)
-        down = -1 * delta.clip(upper=0)
-        ema_up = up.ewm(com=rsi_period - 1, adjust=False).mean()
-        ema_down = down.ewm(com=rsi_period - 1, adjust=False).mean()
-        rs = ema_up / ema_down
-        df['RSI'] = 100 - (100 / (1 + rs))
+        df['RSI'] = get_rsi(close_prices, rsi_period)
         current_rsi = df['RSI'].iloc[-1]
         previous_rsi = df['RSI'].iloc[-2] if len(df) >= 2 else current_rsi
 

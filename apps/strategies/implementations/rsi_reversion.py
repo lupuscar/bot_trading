@@ -1,5 +1,6 @@
 import pandas as pd
 from apps.strategies.base import BaseStrategy, Signal
+from apps.strategies.indicators import get_rsi
 
 class RSIReversionStrategy(BaseStrategy):
     """
@@ -38,15 +39,8 @@ class RSIReversionStrategy(BaseStrategy):
         overbought = self.params.get('overbought_level', 70)
         neutral = self.params.get('neutral_level', 50)
         
-        # Calcular RSI manualmente con pandas
-        delta = data['close'].diff()
-        up = delta.clip(lower=0)
-        down = -1 * delta.clip(upper=0)
-        ema_up = up.ewm(com=period - 1, adjust=False).mean()
-        ema_down = down.ewm(com=period - 1, adjust=False).mean()
-        rs = ema_up / ema_down
-        data['RSI'] = 100 - (100 / (1 + rs))
-        
+        # Calcular RSI
+        data['RSI'] = get_rsi(data['close'], period)
         rsi = data['RSI']
         
         if rsi is None or len(rsi) < 2 or pd.isna(rsi.iloc[-1]):

@@ -28,6 +28,32 @@
         </div>
         
         <div class="form-group">
+            <label class="form-label">Temporalidades a Optimizar</label>
+            <div style="background: rgba(255,255,255,0.05); padding: 1rem; border-radius: 8px; border: 1px solid var(--border-color); display: flex; flex-wrap: wrap; gap: 1rem;">
+                {% for tf in "15m,1h,4h,1d"|slice:":" %}
+                <!-- A Django trick is needed or just hardcoding the HTML -->
+                {% endfor %}
+                <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; margin: 0;">
+                    <input type="checkbox" name="timeframes" value="15m" checked style="width: 16px; height: 16px;">
+                    <span>15m</span>
+                </label>
+                <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; margin: 0;">
+                    <input type="checkbox" name="timeframes" value="1h" checked style="width: 16px; height: 16px;">
+                    <span>1h</span>
+                </label>
+                <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; margin: 0;">
+                    <input type="checkbox" name="timeframes" value="4h" checked style="width: 16px; height: 16px;">
+                    <span>4h</span>
+                </label>
+                <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; margin: 0;">
+                    <input type="checkbox" name="timeframes" value="1d" checked style="width: 16px; height: 16px;">
+                    <span>1d</span>
+                </label>
+            </div>
+            <small class="text-muted">Selecciona las temporalidades a evaluar.</small>
+        </div>
+        
+        <div class="form-group">
             <label class="form-label" for="symbol">Símbolo (Par)</label>
             <input type="text" id="symbol" name="symbol" class="form-input" value="BTC/USDT" required>
             <small class="text-muted">Ej: BTC/USDT, ETH/USDT</small>

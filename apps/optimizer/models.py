@@ -9,6 +9,7 @@ class OptimizationRun(TimeStampedModel):
     end_date = models.DateTimeField()
     trade_risk_pct = models.FloatField(default=5.0)
     selected_strategies = models.JSONField(default=list, blank=True)
+    selected_timeframes = models.JSONField(default=list, blank=True)
     
     STATUS_CHOICES = (
         ('pending', 'Pendiente'),

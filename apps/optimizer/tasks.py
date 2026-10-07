@@ -51,7 +51,7 @@ def run_optimization_task(run_id):
         opt_run.save()
         
         strategies = discover_strategies() # list of tuples (path, name)
-        timeframes = ['15m', '1h', '4h', '1d']
+        timeframes = opt_run.selected_timeframes if opt_run.selected_timeframes else ['15m', '1h', '4h', '1d']
         
         # We don't want to run the AI strategy in backtests because it uses the API and takes forever.
         # Filter out the AI Agent strategy.
@@ -68,6 +68,10 @@ def run_optimization_task(run_id):
         for strategy_path, strategy_name in safe_strategies:
             StrategyClass = import_string(strategy_path)
             opt_params = getattr(StrategyClass, 'get_optimization_parameters', lambda: {})()
+            if not opt_params:
+                # Fallback if the strategy hasn't implemented it yet
+                schema = getattr(StrategyClass, 'get_parameters_schema', lambda: {})()
+                opt_params = {k: [v.get('default')] for k, v in schema.items()}
             param_keys = list(opt_params.keys())
             param_values = list(opt_params.values())
             combinations = [dict(zip(param_keys, v)) for v in itertools.product(*param_values)] if param_keys else [{}]
@@ -101,6 +105,7 @@ def run_optimization_task(run_id):
                     preload_engine.strategy_instance = MaxWarmupStrategy(name=strategy_name)
                     preload_engine.load_data()
                     cached_df = preload_engine.df
+                    cached_extra_dfs = preload_engine.extra_dfs
                     logger.info(f"Preloaded {len(cached_df)} candles for {tf}.")
                 except Exception as e:
                     logger.error(f"Failed to preload data for {strategy_name} on {tf}: {e}")
@@ -131,6 +136,7 @@ def run_optimization_task(run_id):
                     engine.strategy_instance = strategy_instance
                     if cached_df is not None:
                         engine.df = cached_df.copy()
+                        engine.extra_dfs = {k: v.copy() for k, v in cached_extra_dfs.items()}
                     
                     try:
                         engine.run()

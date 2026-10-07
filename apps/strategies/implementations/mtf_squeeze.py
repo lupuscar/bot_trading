@@ -23,10 +23,21 @@ class MTFSqueezeStrategy(BaseStrategy):
     @classmethod
     def get_parameters_schema(cls) -> Dict[str, Any]:
         return {
-            'squeeze_period': [20],
-            'bb_std': [2.0],
-            'kc_mult': [1.5],
-            'macro_ema_period': [200],
+            'squeeze_period': {'type': 'int', 'default': 20},
+            'bb_std': {'type': 'float', 'default': 2.0},
+            'kc_mult': {'type': 'float', 'default': 1.5},
+            'macro_ema_period': {'type': 'int', 'default': 200},
+            'tp_atr_mult': {'type': 'float', 'default': 3.0},
+            'sl_atr_mult': {'type': 'float', 'default': 1.5}
+        }
+
+    @classmethod
+    def get_optimization_parameters(cls) -> Dict[str, Any]:
+        return {
+            'squeeze_period': [20, 30],
+            'bb_std': [2.0, 2.5],
+            'kc_mult': [1.5, 2.0],
+            'macro_ema_period': [100, 200],
             'tp_atr_mult': [2.0, 3.0, 4.0],
             'sl_atr_mult': [1.0, 1.5, 2.0]
         }

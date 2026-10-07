@@ -17,8 +17,6 @@ services:
       POSTGRES_DB: bottradring
       POSTGRES_USER: bottradring
       POSTGRES_PASSWORD: ${DB_PASSWORD:-bottradring_prod_2024}
-    ports:
-      - "5432:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U bottradring"]
       interval: 10s
@@ -34,8 +32,6 @@ services:
     restart: unless-stopped
     volumes:
       - redis_data:/data
-    ports:
-      - "6379:6379"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
@@ -56,8 +52,6 @@ services:
       - static_files:/app/staticfiles
       - ./logs:/app/logs
       - ./data:/app/data
-    ports:
-      - "8000:8000"
     env_file:
       - .env
     depends_on:

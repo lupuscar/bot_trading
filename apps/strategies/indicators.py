@@ -48,3 +48,15 @@ def get_keltner_channels(df: pd.DataFrame, period: int = 20, atr_multiplier: flo
     upper = ema + (atr * atr_multiplier)
     lower = ema - (atr * atr_multiplier)
     return pd.DataFrame({'EMA': ema, 'Upper': upper, 'Lower': lower})
+
+def get_macd(series: pd.Series, fast_period: int = 12, slow_period: int = 26, signal_period: int = 9) -> pd.DataFrame:
+    """
+    Moving Average Convergence Divergence (MACD)
+    Retorna un DataFrame con ['MACD', 'Signal', 'Histogram']
+    """
+    ema_fast = series.ewm(span=fast_period, adjust=False).mean()
+    ema_slow = series.ewm(span=slow_period, adjust=False).mean()
+    macd = ema_fast - ema_slow
+    signal = macd.ewm(span=signal_period, adjust=False).mean()
+    hist = macd - signal
+    return pd.DataFrame({'MACD': macd, 'Signal': signal, 'Histogram': hist})

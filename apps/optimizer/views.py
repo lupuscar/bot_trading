@@ -19,9 +19,10 @@ def optimizer_create(request):
         end_date = request.POST.get('end_date')
         trade_risk_pct = float(request.POST.get('trade_risk_pct', 5.0))
         selected_strategies = request.POST.getlist('strategies')
+        selected_timeframes = request.POST.getlist('timeframes')
         
-        if not all([symbol, start_date, end_date]) or not selected_strategies:
-            messages.error(request, 'Todos los campos y al menos una estrategia son obligatorios')
+        if not all([symbol, start_date, end_date]) or not selected_strategies or not selected_timeframes:
+            messages.error(request, 'Todos los campos, al menos una estrategia y una temporalidad son obligatorios')
             return redirect('optimizer:create')
             
         run = OptimizationRun.objects.create(
@@ -31,6 +32,7 @@ def optimizer_create(request):
             end_date=end_date,
             trade_risk_pct=trade_risk_pct,
             selected_strategies=selected_strategies,
+            selected_timeframes=selected_timeframes,
             status='pending'
         )
         

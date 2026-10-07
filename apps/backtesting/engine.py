@@ -216,6 +216,13 @@ class BacktestEngine:
                 for tf, df_ext in self.extra_dfs.items():
                     sliced_extra_dfs[tf] = df_ext.loc[:current_time]
                 
+                # Actualizar el portfolio de la estrategia
+                self.strategy_instance.portfolio = {
+                    'position': float(self.position),
+                    'position_avg_price': float(self.position_avg_price),
+                    'cash': float(self.cash)
+                }
+                
                 # 1. Obtener Señal
                 signal = self.strategy_instance.safe_analyze(current_slice, extra_data=sliced_extra_dfs)
                 

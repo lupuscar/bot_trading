@@ -10,7 +10,8 @@
         <a href="{% url 'optimizer:create' %}" class="btn btn-primary">Nuevo Optimizador</a>
     </div>
 
-    <div class="table-container">
+    <div class="table-container" id="optimizer-table-container"
+         {% if has_running %}hx-get="{% url 'optimizer:list' %}" hx-trigger="every 2s" hx-select="#optimizer-table-container" hx-swap="outerHTML"{% endif %}>
         <table>
             <thead>
                 <tr>

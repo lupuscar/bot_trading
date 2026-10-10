@@ -34,6 +34,10 @@
                 <!-- A Django trick is needed or just hardcoding the HTML -->
                 {% endfor %}
                 <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; margin: 0;">
+                    <input type="checkbox" name="timeframes" value="5m" checked style="width: 16px; height: 16px;">
+                    <span>5m</span>
+                </label>
+                <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; margin: 0;">
                     <input type="checkbox" name="timeframes" value="15m" checked style="width: 16px; height: 16px;">
                     <span>15m</span>
                 </label>

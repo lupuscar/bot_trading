@@ -8,4 +8,5 @@ urlpatterns = [
     path('new/', views.optimizer_create, name='create'),
     path('<int:pk>/', views.optimizer_detail, name='detail'),
     path('<int:pk>/delete/', views.optimizer_delete, name='delete'),
+    path('result/<int:result_id>/save/', views.optimizer_save_strategy, name='save_strategy'),
 ]

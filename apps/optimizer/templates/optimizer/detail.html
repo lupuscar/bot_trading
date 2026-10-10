@@ -52,6 +52,11 @@
                 <div class="stat-value {% if top.total_return_pct >= 0 %}text-success{% else %}text-danger{% endif %}">
                     {{ top.total_return_pct|floatformat:2 }}%
                 </div>
+                
+                <form method="POST" action="{% url 'optimizer:save_strategy' top.id %}" style="margin-top: 1rem; text-align: center;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-sm btn-primary" style="width: 100%;">💾 Guardar como Estrategia</button>
+                </form>
             </div>
             {% endfor %}
         </div>
@@ -72,6 +77,7 @@
                         <th>Retorno</th>
                         <th>Drawdown</th>
                         <th>Operaciones (G/P)</th>
+                        <th>Acción</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -85,6 +91,12 @@
                         </td>
                         <td class="font-mono text-danger">{{ res.max_drawdown_pct|floatformat:2 }}%</td>
                         <td>{{ res.total_trades }} ({{ res.winning_trades }}/{{ res.losing_trades }})</td>
+                        <td>
+                            <form method="POST" action="{% url 'optimizer:save_strategy' res.id %}" style="margin: 0;">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-sm btn-secondary" title="Guardar como nueva estrategia">💾 Guardar</button>
+                            </form>
+                        </td>
                     </tr>
                     {% endfor %}
                 </tbody>

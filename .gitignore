@@ -57,3 +57,8 @@ logs/*
 # Celery
 celerybeat-schedule
 celerybeat.pid
+
+# Debug & Test Scripts
+test_*.py
+update_db.py
+trades_debug.txt

@@ -9,7 +9,8 @@ from apps.strategies.registry import discover_strategies
 @login_required
 def optimizer_list(request):
     runs = OptimizationRun.objects.filter(user=request.user)
-    return render(request, 'optimizer/list.html', {'runs': runs})
+    has_running = any(run.status in ['pending', 'running'] for run in runs)
+    return render(request, 'optimizer/list.html', {'runs': runs, 'has_running': has_running})
 
 @login_required
 def optimizer_create(request):
@@ -65,4 +66,31 @@ def optimizer_delete(request, pk):
     if request.method == 'POST':
         run.delete()
         messages.success(request, 'Optimización eliminada')
+    return redirect('optimizer:list')
+
+@login_required
+def optimizer_save_strategy(request, result_id):
+    from apps.strategies.models import Strategy
+    
+    if request.method == 'POST':
+        result = get_object_or_404(OptimizationResult, pk=result_id, run__user=request.user)
+        
+        # Create a new strategy from the optimization result
+        name = f"Optimized {result.strategy_name} ({result.run.symbol} {result.timeframe})"
+        if len(name) > 100:
+            name = name[:97] + "..."
+            
+        strategy = Strategy.objects.create(
+            user=request.user,
+            name=name,
+            description=f"Auto-generated from Optimizer Run #{result.run.id}. Return: {result.total_return_pct}%.",
+            strategy_class=result.strategy_class,
+            version="1.0",
+            timeframe=result.timeframe,
+            parameters=result.parameters
+        )
+        
+        messages.success(request, f'¡Estrategia "{name}" guardada con éxito!')
+        return redirect('strategies:list')
+        
     return redirect('optimizer:list')
